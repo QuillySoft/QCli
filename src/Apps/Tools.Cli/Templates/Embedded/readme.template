@@ -1,0 +1,49 @@
+# {{ProjectName}}
+
+{{#if Description}}
+{{Description}}
+{{/if}}
+
+A modern {{ProjectType}} architecture project built with .NET 8 and QCLI.
+
+## 🚀 Quick Start
+
+```bash
+# Install QCLI globally
+dotnet tool install --global QuillySOFT.CLI
+
+# Generate your first entity
+qcli add Order --all
+
+# Check project health
+qcli doctor
+```
+
+## 📁 Project Structure
+
+```
+src/
+├── Domain/                 # Domain entities and business logic
+├── Application/            # Application services and commands/queries
+├── Infrastructure/         # Data access and external services
+└── WebApi/                # REST API controllers and configuration
+
+tests/
+├── Application.Tests/      # Unit tests for application layer
+└── Integration.Tests/      # Integration tests
+```
+
+## 🛠️ Available Commands
+
+- `qcli add <Entity> --all` - Generate complete CRUD operations
+- `qcli add <Entity> --create` - Generate create operation only  
+- `qcli config show` - View current configuration
+- `qcli doctor` - Diagnose project issues
+
+## 🔧 Configuration
+
+The project uses `qcli.json` for configuration. See the generated file for available options.
+
+---
+
+Generated with ❤️ by [QCLI](https://github.com/QuillySoft/QCli)

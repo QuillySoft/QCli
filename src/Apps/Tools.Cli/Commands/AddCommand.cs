@@ -1,16 +1,34 @@
 using Spectre.Console;
 using Tools.Cli.Configuration;
+using Tools.Cli.Utils;
 
 namespace Tools.Cli.Commands;
 
 public sealed class AddCommand(CliConfiguration config)
 {
-    public int Execute(string entityName, bool all = false, bool create = false, bool update = false, bool delete = false, bool read = false, string? entityType = null)
+    public sealed class Options
     {
-        AnsiConsole.MarkupLine($"[green]Adding CRUD operations for[/] [blue]{entityName}[/]");
+        public string EntityName { get; init; } = "";
+        public bool All { get; init; }
+        public bool Create { get; init; }
+        public bool Update { get; init; }
+        public bool Delete { get; init; }
+        public bool Read { get; init; }
+        public string? EntityType { get; init; }
+        public bool SkipTests { get; init; }
+        public bool SkipPermissions { get; init; }
+        public string? Template { get; init; }
+        public string? OutputPath { get; init; }
+        public bool DryRun { get; init; }
+        public bool Verbose { get; init; }
+    }
+
+    public int Execute(Options options)
+    {
+        AnsiConsole.MarkupLine($"[green]🎯 Adding CRUD operations for[/] [blue]{options.EntityName}[/]");
 
         // Determine what to generate
-        var operations = DetermineOperations(all, create, update, delete, read);
+        var operations = DetermineOperations(options);
         
         if (!operations.Any())
         {
@@ -25,11 +43,21 @@ public sealed class AddCommand(CliConfiguration config)
         }
 
         // Normalize entity name
-        var normalizedEntityName = NormalizeEntityName(entityName);
+        var normalizedEntityName = NormalizeEntityName(options.EntityName);
         var singularName = GetSingularName(normalizedEntityName);
         var pluralName = GetPluralName(normalizedEntityName);
 
-        AnsiConsole.MarkupLine($"[yellow]Generating operations:[/] {string.Join(", ", operations)}");
+        if (options.Verbose)
+        {
+            DisplayGenerationPlan(singularName, pluralName, operations, options);
+        }
+
+        if (options.DryRun)
+        {
+            return ShowDryRun(singularName, pluralName, operations, options);
+        }
+
+        AnsiConsole.MarkupLine($"[yellow]⚡ Generating operations:[/] {string.Join(", ", operations)}");
 
         // Check if entity exists
         var entityExists = CheckEntityExists(singularName);
@@ -52,44 +80,173 @@ public sealed class AddCommand(CliConfiguration config)
         
         try
         {
-            generator.GenerateOperations(singularName, pluralName, operations, entityType ?? config.CodeGeneration.DefaultEntityType);
-            
-            AnsiConsole.MarkupLine($"[green]✓ Successfully generated CRUD operations for[/] [blue]{entityName}[/]");
-            AnsiConsole.MarkupLine($"[yellow]Note: Review and customize the generated code according to your business requirements.[/]");
-            
+            ProgressHelper.ShowSpinner($"Generating {singularName} CRUD operations...", () =>
+            {
+                generator.GenerateOperations(singularName, pluralName, operations, options.EntityType ?? "Audited");
+            });
+
+            ShowSuccessMessage(singularName, pluralName, operations);
             return 0;
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine($"[red]Error generating code: {ex.Message}[/]");
+            AnsiConsole.MarkupLine($"[red]❌ Error generating code: {ex.Message}[/]");
+            if (options.Verbose)
+            {
+                AnsiConsole.WriteException(ex);
+            }
             return 1;
         }
     }
 
-    private List<string> DetermineOperations(bool all, bool create, bool update, bool delete, bool read)
+    public int Execute(string entityName, bool all = false, bool create = false, bool update = false, bool delete = false, bool read = false, string? entityType = null)
+    {
+        // Legacy method for backward compatibility
+        return Execute(new Options
+        {
+            EntityName = entityName,
+            All = all,
+            Create = create,
+            Update = update,
+            Delete = delete,
+            Read = read,
+            EntityType = entityType
+        });
+    }
+
+    private List<string> DetermineOperations(Options options)
     {
         var operations = new List<string>();
 
-        if (all)
+        if (options.All)
         {
             operations.AddRange(new[] { "Create", "Read", "Update", "Delete" });
         }
         else
         {
-            if (create) operations.Add("Create");
-            if (read) operations.Add("Read");
-            if (update) operations.Add("Update");
-            if (delete) operations.Add("Delete");
+            if (options.Create) operations.Add("Create");
+            if (options.Read) operations.Add("Read");
+            if (options.Update) operations.Add("Update");
+            if (options.Delete) operations.Add("Delete");
         }
 
         return operations;
+    }
+
+    private void DisplayGenerationPlan(string singularName, string pluralName, List<string> operations, Options options)
+    {
+        var panel = new Panel(new Markup(
+            $"[bold]Entity:[/] {singularName} (plural: {pluralName})\n" +
+            $"[bold]Operations:[/] {string.Join(", ", operations)}\n" +
+            $"[bold]Entity Type:[/] {options.EntityType ?? "Audited"}\n" +
+            $"[bold]Generate Tests:[/] {(!options.SkipTests ? "Yes" : "No")}\n" +
+            $"[bold]Generate Permissions:[/] {(!options.SkipPermissions ? "Yes" : "No")}\n" +
+            $"[bold]Template:[/] {options.Template ?? "default"}"))
+        {
+            Header = new PanelHeader(" Generation Plan "),
+            Border = BoxBorder.Rounded,
+            BorderStyle = new Style(Color.Blue)
+        };
+        
+        AnsiConsole.Write(panel);
+        AnsiConsole.WriteLine();
+    }
+
+    private int ShowDryRun(string singularName, string pluralName, List<string> operations, Options options)
+    {
+        AnsiConsole.MarkupLine("[yellow]🔍 Dry run - Files that would be generated:[/]\n");
+
+        var filesToGenerate = GetFilesToGenerate(singularName, pluralName, operations, options);
+
+        var tree = new Tree($"[green]{singularName} CRUD Generation[/]");
+        
+        foreach (var category in filesToGenerate.GroupBy(f => f.Category))
+        {
+            var categoryNode = tree.AddNode($"[yellow]{category.Key}[/]");
+            foreach (var file in category)
+            {
+                categoryNode.AddNode($"[dim]{file.Path}[/]");
+            }
+        }
+
+        AnsiConsole.Write(tree);
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[dim]Run without --dry-run to generate these files.[/]");
+
+        return 0;
+    }
+
+    private void ShowSuccessMessage(string singularName, string pluralName, List<string> operations)
+    {
+        var panel = new Panel(new Markup(
+            $"[bold green]🎉 {singularName} CRUD operations generated successfully![/]\n\n" +
+            $"[yellow]Generated operations:[/] {string.Join(", ", operations)}\n\n" +
+            "[dim]Next steps:[/]\n" +
+            "• Review generated files\n" +
+            "• Add necessary business logic\n" +
+            "• Run tests to ensure everything works\n" +
+            "• Update database with migrations if needed"))
+        {
+            Header = new PanelHeader(" Success! "),
+            Border = BoxBorder.Rounded,
+            BorderStyle = new Style(Color.Green)
+        };
+        
+        AnsiConsole.Write(panel);
+    }
+
+    private List<GeneratedFile> GetFilesToGenerate(string singularName, string pluralName, List<string> operations, Options options)
+    {
+        var files = new List<GeneratedFile>();
+
+        // Entity files
+        files.Add(new GeneratedFile("Domain", $"src/Domain/{pluralName}/{singularName}.cs"));
+        files.Add(new GeneratedFile("Persistence", $"src/Infrastructure/Persistence/Configurations/{singularName}Configuration.cs"));
+
+        // Operation-specific files
+        foreach (var operation in operations)
+        {
+            switch (operation)
+            {
+                case "Create":
+                    files.Add(new GeneratedFile("Application", $"src/Application/{pluralName}/Commands/Create{singularName}/Create{singularName}Command.cs"));
+                    files.Add(new GeneratedFile("Application", $"src/Application/{pluralName}/Commands/Create{singularName}/Create{singularName}CommandHandler.cs"));
+                    if (!options.SkipTests)
+                        files.Add(new GeneratedFile("Tests", $"tests/Application.Tests/{pluralName}/Commands/Create{singularName}CommandTests.cs"));
+                    break;
+
+                case "Read":
+                    files.Add(new GeneratedFile("Application", $"src/Application/{pluralName}/Queries/Get{pluralName}/Get{pluralName}Query.cs"));
+                    files.Add(new GeneratedFile("Application", $"src/Application/{pluralName}/Queries/Get{singularName}ById/Get{singularName}ByIdQuery.cs"));
+                    break;
+
+                case "Update":
+                    files.Add(new GeneratedFile("Application", $"src/Application/{pluralName}/Commands/Update{singularName}/Update{singularName}Command.cs"));
+                    break;
+
+                case "Delete":
+                    files.Add(new GeneratedFile("Application", $"src/Application/{pluralName}/Commands/Delete{singularName}/Delete{singularName}Command.cs"));
+                    break;
+            }
+        }
+
+        // Controller
+        files.Add(new GeneratedFile("WebApi", $"src/WebApi/Controllers/{pluralName}Controller.cs"));
+
+        // Permissions
+        if (!options.SkipPermissions)
+        {
+            files.Add(new GeneratedFile("Application", $"src/Application/Authorization/Permissions/{pluralName}Permissions.cs"));
+        }
+
+        return files;
     }
 
     private bool ValidateConfiguration()
     {
         if (string.IsNullOrEmpty(config.Paths.RootPath))
         {
-            AnsiConsole.MarkupLine("[red]Root path not configured. Run 'quillysoft-cli config init' to set up configuration.[/]");
+            AnsiConsole.MarkupLine("[red]Root path not configured. Run 'qcli init' to set up configuration.[/]");
             return false;
         }
 

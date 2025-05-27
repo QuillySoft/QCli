@@ -10,12 +10,9 @@
         <ToolCommandName>qcli</ToolCommandName>
         <PackageId>QuillySOFT.CLI</PackageId>        <PackageVersion>1.0.0</PackageVersion>
         <Authors>QuillySOFT</Authors>
-        <Description>A powerful CLI tool for generating CRUD operations, boilerplate code, and managing CLIO architecture projects</Description>
-        <PackageTags>crud;cli;clio;architecture;code-generation;clean-architecture;ddd;scaffolding;dotnet-tool</PackageTags>
+        <Description>A powerful CLI tool for generating CRUD operations, boilerplate code, and managing CLIO architecture projects</Description>        <PackageTags>crud;cli;clio;architecture;code-generation;clean-architecture;ddd;scaffolding;dotnet-tool</PackageTags>
         <RepositoryUrl>https://github.com/QuillySoft/QCli</RepositoryUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageIcon>icon.png</PackageIcon>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageReleaseNotes>
         v1.0.0:
@@ -32,11 +29,14 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
         <PackageReference Include="Spectre.Console" Version="0.49.1"/>
         <PackageReference Include="Spectre.Console.Json" Version="0.49.1"/>
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1"/>
         <PackageReference Include="System.Text.Json" Version="8.0.5"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11"/>
+        <PackageReference Include="Humanizer.Core" Version="2.14.1"/>
     </ItemGroup>
 
     <ItemGroup>

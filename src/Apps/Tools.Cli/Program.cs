@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Tools.Cli;
 using Tools.Cli.Commands;
+using Tools.Cli.Templates;
 using PromptHelper = Tools.Cli.Utils.PromptHelper;
 
 var configuration = new ConfigurationBuilder()
@@ -12,9 +13,17 @@ var configuration = new ConfigurationBuilder()
 var services = new ServiceCollection();
 services.AddSingleton<IConfiguration>(configuration);
 
+// Register template engine
+services.AddSingleton<ITemplateEngine, TemplateEngine>();
+
 // Register commands
 services.AddTransient<SetupCommand>(); // Keep for backward compatibility
 services.AddTransient<ConfigCommand>();
+services.AddTransient<InitCommand>();
+services.AddTransient<ScaffoldCommand>();
+services.AddTransient<ListCommand>();
+services.AddTransient<DoctorCommand>();
+services.AddTransient<UpdateCommand>();
 services.AddLogging();
 
 var cliApp = new CliApp(services.BuildServiceProvider(true));

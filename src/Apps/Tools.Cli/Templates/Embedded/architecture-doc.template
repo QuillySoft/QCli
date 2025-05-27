@@ -1,0 +1,43 @@
+# {{ProjectName}} - Architecture Overview
+
+This project follows the **Clean Architecture** principles with CLIO (Clean, Layered, Integrated, Organized) pattern.
+
+## 🏗️ Architecture Layers
+
+### Domain Layer (`src/Domain/`)
+- **Entities**: Core business objects with behavior
+- **Value Objects**: Immutable objects that represent domain concepts  
+- **Domain Events**: Events that occur within the domain
+- **Domain Services**: Business logic that doesn't belong to a single entity
+
+### Application Layer (`src/Application/`)
+- **Commands**: Write operations (Create, Update, Delete)
+- **Queries**: Read operations with various filters and projections
+- **Events**: Application-level event handlers
+- **DTOs**: Data transfer objects for API contracts
+
+### Infrastructure Layer (`src/Infrastructure/`)
+- **Persistence**: Entity Framework configurations and repositories
+- **External Services**: Third-party integrations
+- **Cross-cutting Concerns**: Logging, caching, etc.
+
+### Web API Layer (`src/WebApi/`)
+- **Controllers**: REST API endpoints
+- **Middleware**: Request/response pipeline components
+- **Configuration**: Startup and service registration
+
+## 🎯 Design Principles
+
+1. **Dependency Inversion**: Higher-level modules don't depend on lower-level modules
+2. **Single Responsibility**: Each class has one reason to change
+3. **Open/Closed**: Open for extension, closed for modification
+4. **Interface Segregation**: Clients shouldn't depend on interfaces they don't use
+
+## 📝 Coding Standards
+
+- Use **CQRS** pattern for separating reads and writes
+- Implement **Domain Events** for loose coupling
+- Follow **Repository Pattern** for data access
+- Use **Mediator Pattern** for request handling
+
+Generated with QCLI v{{Version}}
