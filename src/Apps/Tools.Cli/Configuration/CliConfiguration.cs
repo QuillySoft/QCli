@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace Cli.Configuration;
+namespace Tools.Cli.Configuration;
 
 public sealed class CliConfiguration
 {

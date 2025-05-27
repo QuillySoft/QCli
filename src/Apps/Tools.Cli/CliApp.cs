@@ -1,20 +1,19 @@
-using Cli.Commands;
-using Cli.Configuration;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.DependencyInjection;
+using Tools.Cli.Commands;
+using Tools.Cli.Configuration;
 
-namespace Cli;
+namespace Tools.Cli;
 
 public sealed class CliApp(IServiceProvider serviceProvider)
 {
     private TCommand GetCmd<TCommand>() where TCommand : notnull => serviceProvider.GetRequiredService<TCommand>();
 
     public int Execute(string[] args)
-    {
-        var app = new CommandLineApplication
+    {        var app = new CommandLineApplication
         {
-            Name = "quillysoft-cli",
-            Description = "A CLI tool for generating CRUD operations in CLIO architecture projects",
+            Name = "qcli",
+            Description = "🚀 QCLI - A powerful CLI tool for generating CRUD operations and managing CLIO architecture projects",
         };
 
         app.HelpOption(true);

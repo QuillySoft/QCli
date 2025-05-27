@@ -1,7 +1,7 @@
-using Cli.Configuration;
 using Spectre.Console;
+using Tools.Cli.Configuration;
 
-namespace Cli.Commands;
+namespace Tools.Cli.Commands;
 
 public sealed class ConfigCommand
 {

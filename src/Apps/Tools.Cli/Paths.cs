@@ -1,7 +1,7 @@
 using System.Reflection;
-using Cli.Utils;
+using Tools.Cli.Utils;
 
-namespace Cli;
+namespace Tools.Cli;
 
 public sealed class Paths
 {

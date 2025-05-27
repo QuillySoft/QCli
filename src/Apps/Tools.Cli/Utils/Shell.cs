@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Cli.Utils;
+namespace Tools.Cli.Utils;
 
 public static class Shell
 {

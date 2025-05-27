@@ -1,17 +1,10 @@
-using Cli.Configuration;
 using Spectre.Console;
+using Tools.Cli.Configuration;
 
-namespace Cli.Commands;
+namespace Tools.Cli.Commands;
 
-public sealed class CrudGenerator
+public sealed class CrudGenerator(CliConfiguration config)
 {
-    private readonly CliConfiguration _config;
-
-    public CrudGenerator(CliConfiguration config)
-    {
-        _config = config;
-    }
-
     public void GenerateOperations(string singularName, string pluralName, List<string> operations, string entityType)
     {
         // Create directory structure
@@ -24,31 +17,31 @@ public sealed class CrudGenerator
                 case "Create Entity":
                     GenerateDomainEntity(singularName, pluralName, entityType);
                     GenerateEntityConfiguration(singularName, pluralName);
-                    if (_config.CodeGeneration.GeneratePermissions)
+                    if (config.CodeGeneration.GeneratePermissions)
                         GeneratePermissionsConstants(singularName, pluralName);
                     break;
                 
                 case "Create":
                     GenerateCreateCommand(singularName, pluralName);
-                    if (_config.CodeGeneration.GenerateTests)
+                    if (config.CodeGeneration.GenerateTests)
                         GenerateCreateCommandTest(singularName, pluralName);
                     break;
 
                 case "Read":
                     GenerateQueries(singularName, pluralName);
-                    if (_config.CodeGeneration.GenerateTests)
+                    if (config.CodeGeneration.GenerateTests)
                         GenerateQueryTests(singularName, pluralName);
                     break;
 
                 case "Update":
                     GenerateUpdateCommand(singularName, pluralName);
-                    if (_config.CodeGeneration.GenerateTests)
+                    if (config.CodeGeneration.GenerateTests)
                         GenerateUpdateCommandTest(singularName, pluralName);
                     break;
 
                 case "Delete":
                     GenerateDeleteCommand(singularName, pluralName);
-                    if (_config.CodeGeneration.GenerateTests)
+                    if (config.CodeGeneration.GenerateTests)
                         GenerateDeleteCommandTest(singularName, pluralName);
                     break;
             }
@@ -57,12 +50,12 @@ public sealed class CrudGenerator
         // Generate common files
         GenerateControllerFile(singularName, pluralName, operations);
 
-        if (_config.CodeGeneration.GenerateEvents && operations.Count > 1)
+        if (config.CodeGeneration.GenerateEvents && operations.Count > 1)
         {
             GenerateEvents(singularName, pluralName);
         }
 
-        if (_config.CodeGeneration.GenerateMappingProfiles)
+        if (config.CodeGeneration.GenerateMappingProfiles)
         {
             GenerateMappingProfile(singularName, pluralName);
         }
@@ -75,28 +68,28 @@ public sealed class CrudGenerator
     {
         var basePaths = new[]
         {
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName),
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName, "Commands"),
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName, "Commands", $"Create{singularName}"),
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName, "Commands", $"Update{singularName}"),
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName, "Commands", $"Delete{singularName}"),
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName, "Queries"),
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName, "Queries", $"Get{pluralName}"),
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName, "Queries", $"Get{singularName}ById"),
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName, "Events"),
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName, "Mapping"),
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.DomainPath), pluralName),
-            Path.Combine(_config.Paths.GetFullPath(_config.Paths.PersistencePath), "Configurations", "Tenants", pluralName)
+            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Commands"),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Commands", $"Create{singularName}"),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Commands", $"Update{singularName}"),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Commands", $"Delete{singularName}"),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Queries"),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Queries", $"Get{pluralName}"),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Queries", $"Get{singularName}ById"),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Events"),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Mapping"),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.DomainPath), pluralName),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.PersistencePath), "Configurations", "Tenants", pluralName)
         };
 
-        if (_config.CodeGeneration.GenerateTests)
+        if (config.CodeGeneration.GenerateTests)
         {
             basePaths = basePaths.Concat(new[]
             {
-                Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationTestsPath), pluralName),
-                Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationTestsPath), pluralName, "Commands"),
-                Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationTestsPath), pluralName, "Queries"),
-                Path.Combine(_config.Paths.GetFullPath(_config.Paths.IntegrationTestsPath))
+                Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationTestsPath), pluralName),
+                Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationTestsPath), pluralName, "Commands"),
+                Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationTestsPath), pluralName, "Queries"),
+                Path.Combine(config.Paths.GetFullPath(config.Paths.IntegrationTestsPath))
             }).ToArray();
         }
 
@@ -110,7 +103,7 @@ public sealed class CrudGenerator
 
     private void GenerateDomainEntity(string singularName, string pluralName, string entityType)
     {
-        var domainPath = Path.Combine(_config.Paths.GetFullPath(_config.Paths.DomainPath), pluralName);
+        var domainPath = Path.Combine(config.Paths.GetFullPath(config.Paths.DomainPath), pluralName);
         var entityPath = Path.Combine(domainPath, $"{singularName}.cs");
 
         var baseEntityType = entityType == "FullyAudited"
@@ -137,7 +130,7 @@ public sealed class {singularName} : {baseEntityType}
 
     private void GenerateEntityConfiguration(string singularName, string pluralName)
     {
-        var configPath = Path.Combine(_config.Paths.GetFullPath(_config.Paths.PersistencePath), "Configurations", "Tenants", pluralName);
+        var configPath = Path.Combine(config.Paths.GetFullPath(config.Paths.PersistencePath), "Configurations", "Tenants", pluralName);
         var configFile = Path.Combine(configPath, $"{singularName}Configuration.cs");
 
         var content = $@"using Domain.{pluralName};
@@ -177,7 +170,7 @@ public sealed class {singularName}Configuration : IEntityTypeConfiguration<{sing
 
     private void GenerateCreateCommand(string singularName, string pluralName)
     {
-        var commandPath = Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName, "Commands", $"Create{singularName}");
+        var commandPath = Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Commands", $"Create{singularName}");
         var commandFile = Path.Combine(commandPath, $"Create{singularName}Command.cs");
         var handlerFile = Path.Combine(commandPath, $"Create{singularName}CommandHandler.cs");
         var validatorFile = Path.Combine(commandPath, $"Create{singularName}CommandValidator.cs");
@@ -258,7 +251,7 @@ public sealed class Create{singularName}CommandValidator : AbstractValidator<Cre
 
     private void GenerateGetAllQuery(string singularName, string pluralName)
     {
-        var queryPath = Path.Combine(_config.Paths.GetFullPath(_config.Paths.ApplicationPath), pluralName, "Queries", $"Get{pluralName}");
+        var queryPath = Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Queries", $"Get{pluralName}");
         
         var queryFile = Path.Combine(queryPath, $"Get{pluralName}Query.cs");
         var handlerFile = Path.Combine(queryPath, $"Get{pluralName}QueryHandler.cs");
@@ -350,7 +343,7 @@ public sealed class Get{pluralName}QueryHandler : IRequestHandler<Get{pluralName
 
     private void GenerateControllerFile(string singularName, string pluralName, List<string> operations)
     {
-        var controllerPath = _config.Paths.GetFullPath(_config.Paths.ControllersPath);
+        var controllerPath = config.Paths.GetFullPath(config.Paths.ControllersPath);
         var controllerFile = Path.Combine(controllerPath, $"{pluralName}Controller.cs");
 
         var content = $@"using Application.{pluralName}.Commands.Create{singularName};
@@ -392,7 +385,7 @@ public sealed class {pluralName}Controller : ApiControllerBase
 
     private void GeneratePermissionsConstants(string singularName, string pluralName)
     {
-        var permissionsPath = Path.Combine(_config.Paths.GetFullPath(_config.Paths.DomainPath), "PermissionsConstants");
+        var permissionsPath = Path.Combine(config.Paths.GetFullPath(config.Paths.DomainPath), "PermissionsConstants");
         var permissionsFile = Path.Combine(permissionsPath, $"{pluralName}Permissions.cs");
 
         var content = $@"namespace Domain.PermissionsConstants;

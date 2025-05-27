@@ -11,8 +11,8 @@ dotnet tool install --global QuillySOFT.CLI --add-source https://your-private-nu
 
 ### From Source
 ```bash
-git clone https://github.com/quillysoft/quillysoft-cli.git
-cd quillysoft-cli/src/Apps/Tools.Cli
+git clone https://github.com/QuillySoft/QCli
+cd qcli/src/Apps/Tools.Cli
 dotnet pack
 dotnet tool install --global --add-source ./nupkg QuillySOFT.CLI
 ```
@@ -24,49 +24,49 @@ Before using the tool, initialize the configuration in your project:
 
 ```bash
 cd /path/to/your/clio/project
-quillysoft-cli config init
+qcli config init
 ```
 
-This will create a `quillysoft-cli.json` configuration file with auto-detected paths.
+This will create a `qcli.json` configuration file with auto-detected paths.
 
 ### Generate CRUD Operations
 
 #### Generate all CRUD operations for an entity:
 ```bash
-quillysoft-cli add Order --all
+qcli add Order --all
 ```
 
 #### Generate specific operations:
 ```bash
-quillysoft-cli add Order --create --read
-quillysoft-cli add Product --update --delete
+qcli add Order --create --read
+qcli add Product --update --delete
 ```
 
 #### Generate with custom entity type:
 ```bash
-quillysoft-cli add Order --all --entity-type FullyAudited
+qcli add Order --all --entity-type FullyAudited
 ```
 
 ### Configuration Management
 
 #### Show current configuration:
 ```bash
-quillysoft-cli config show
+qcli config show
 ```
 
 #### Generate sample configuration:
 ```bash
-quillysoft-cli config sample
+qcli config sample
 ```
 
 #### Set configuration values:
 ```bash
-quillysoft-cli config set --key rootpath --value "c:\projects\MyProject"
+qcli config set --key rootpath --value "c:\projects\MyProject"
 ```
 
 ## Configuration File
 
-The tool uses a `quillysoft-cli.json` configuration file to define project paths and settings. Here's a sample:
+The tool uses a `qcli.json` configuration file to define project paths and settings. Here's a sample:
 
 ```json
 {
@@ -93,7 +93,7 @@ The tool uses a `quillysoft-cli.json` configuration file to define project paths
 
 ## What Gets Generated
 
-When you run `quillysoft-cli add Order --all`, the tool generates:
+When you run `qcli add Order --all`, the tool generates:
 
 ### Domain Layer
 - `Order.cs` - Domain entity

@@ -1,17 +1,10 @@
-using Cli.Configuration;
 using Spectre.Console;
+using Tools.Cli.Configuration;
 
-namespace Cli.Commands;
+namespace Tools.Cli.Commands;
 
-public sealed class AddCommand
+public sealed class AddCommand(CliConfiguration config)
 {
-    private readonly CliConfiguration _config;
-
-    public AddCommand(CliConfiguration config)
-    {
-        _config = config;
-    }
-
     public int Execute(string entityName, bool all = false, bool create = false, bool update = false, bool delete = false, bool read = false, string? entityType = null)
     {
         AnsiConsole.MarkupLine($"[green]Adding CRUD operations for[/] [blue]{entityName}[/]");
@@ -55,11 +48,11 @@ public sealed class AddCommand
         }
 
         // Generate code
-        var generator = new CrudGenerator(_config);
+        var generator = new CrudGenerator(config);
         
         try
         {
-            generator.GenerateOperations(singularName, pluralName, operations, entityType ?? _config.CodeGeneration.DefaultEntityType);
+            generator.GenerateOperations(singularName, pluralName, operations, entityType ?? config.CodeGeneration.DefaultEntityType);
             
             AnsiConsole.MarkupLine($"[green]✓ Successfully generated CRUD operations for[/] [blue]{entityName}[/]");
             AnsiConsole.MarkupLine($"[yellow]Note: Review and customize the generated code according to your business requirements.[/]");
@@ -94,15 +87,15 @@ public sealed class AddCommand
 
     private bool ValidateConfiguration()
     {
-        if (string.IsNullOrEmpty(_config.Paths.RootPath))
+        if (string.IsNullOrEmpty(config.Paths.RootPath))
         {
             AnsiConsole.MarkupLine("[red]Root path not configured. Run 'quillysoft-cli config init' to set up configuration.[/]");
             return false;
         }
 
-        if (!Directory.Exists(_config.Paths.RootPath))
+        if (!Directory.Exists(config.Paths.RootPath))
         {
-            AnsiConsole.MarkupLine($"[red]Root path does not exist: {_config.Paths.RootPath}[/]");
+            AnsiConsole.MarkupLine($"[red]Root path does not exist: {config.Paths.RootPath}[/]");
             return false;
         }
 
@@ -111,7 +104,7 @@ public sealed class AddCommand
 
     private bool CheckEntityExists(string entityName)
     {
-        var domainPath = _config.Paths.GetFullPath(_config.Paths.DomainPath);
+        var domainPath = config.Paths.GetFullPath(config.Paths.DomainPath);
         var entityFile = Path.Combine(domainPath, $"{entityName}s", $"{entityName}.cs");
         return File.Exists(entityFile);
     }

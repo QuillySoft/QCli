@@ -1,4 +1,4 @@
-namespace Cli;
+namespace Tools.Cli;
 
 public enum DbContextCliOptions
 {

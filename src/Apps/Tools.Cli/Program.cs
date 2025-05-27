@@ -1,8 +1,8 @@
-﻿using Cli;
-using Cli.Commands;
-using Cli.Utils;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Tools.Cli;
+using Tools.Cli.Commands;
+using PromptHelper = Tools.Cli.Utils.PromptHelper;
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false)

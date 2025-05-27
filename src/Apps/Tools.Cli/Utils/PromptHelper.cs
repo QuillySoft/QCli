@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Spectre.Console;
 
-namespace Cli.Utils;
+namespace Tools.Cli.Utils;
 
 public static partial class PromptHelper
 {

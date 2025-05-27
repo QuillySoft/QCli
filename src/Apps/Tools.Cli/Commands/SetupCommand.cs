@@ -1,6 +1,6 @@
 ﻿using Spectre.Console;
 
-namespace Cli.Commands;
+namespace Tools.Cli.Commands;
 
 public sealed class SetupCommand
 {
