@@ -22,7 +22,7 @@ public sealed class ScaffoldCommand(ITemplateEngine templateEngine)
 
         try
         {
-            CreateProjectStructure(projectName, targetPath, template ?? "clio");
+            CreateProjectStructure(projectName, targetPath, template ?? "clean-architecture");
             AnsiConsole.MarkupLine($"[green]✅ Project '{projectName}' scaffolded successfully![/]");
             AnsiConsole.MarkupLine($"[dim]Project created at: {targetPath}[/]");
             
@@ -55,7 +55,7 @@ public sealed class ScaffoldCommand(ITemplateEngine templateEngine)
         }
 
         // Create qcli.json configuration
-        var config = new EnhancedCliConfiguration
+        var config = new CliConfiguration
         {
             Project = new ProjectInfo
             {
@@ -80,11 +80,11 @@ public sealed class ScaffoldCommand(ITemplateEngine templateEngine)
         {
             "minimal" => GetMinimalStructure(),
             "ddd" => GetDddStructure(),
-            _ => GetClioStructure()
+            _ => GetCleanArchitectureStructure()
         };
     }
 
-    private ProjectStructure GetClioStructure()
+    private ProjectStructure GetCleanArchitectureStructure()
     {
         return new ProjectStructure
         {

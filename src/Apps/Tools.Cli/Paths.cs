@@ -11,7 +11,7 @@ public sealed class Paths
 
     public static string WebAppDirPath => Path.Combine(RepositoryRootPath, "src", "Apps", "ClientApp");
 
-    public static string ClioDbContextLibDirPath => Path.Combine(RepositoryRootPath, "src", "Infra", "Persistence");
+    public static string ApplicationDbContextLibDirPath => Path.Combine(RepositoryRootPath, "src", "Infra", "Persistence");
 
     static Paths()
     {

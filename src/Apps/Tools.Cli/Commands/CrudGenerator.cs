@@ -195,11 +195,11 @@ using Application.{pluralName}.Events;";
 namespace Application.{pluralName}.Commands.Create{singularName};
 
 [Authorize(Permissions = [Permissions.{pluralName}.Actions.Create])]
-public sealed class Create{singularName}Command({singularName}ForCreateUpdateDto {singularName.ToLower()}Dto) : ITenantCommand<Guid>
+public sealed class Create{singularName}Command({singularName}ForCreateUpdateDto {singularName.ToLower()}Dto) : IRequest<Guid>
 {{
     public {singularName}ForCreateUpdateDto {singularName}Dto {{ get; }} = {singularName.ToLower()}Dto;
 
-    public sealed class Handler(ITenantDbContext dbContext";
+    public sealed class Handler(IApplicationDbContext dbContext";
 
         if (config.CodeGeneration.GenerateEvents)
         {
@@ -287,11 +287,11 @@ using Microsoft.EntityFrameworkCore;
 namespace Application.{pluralName}.Queries.Get{pluralName};
 
 [Authorize(Permissions = [Permissions.{pluralName}.Actions.View])]
-public sealed class Get{pluralName}Query(PaginatedRequestDto requestDto) : ITenantQuery<PaginatedList<{singularName}ForListDto>>
+public sealed class Get{pluralName}Query(PaginatedRequestDto requestDto) : IRequest<PaginatedList<{singularName}ForListDto>>
 {{
     public PaginatedRequestDto RequestDto {{ get; }} = requestDto;
 
-    public sealed class Handler(ITenantDbContext dbContext) : IRequestHandler<Get{pluralName}Query, PaginatedList<{singularName}ForListDto>>
+    public sealed class Handler(IApplicationDbContext dbContext) : IRequestHandler<Get{pluralName}Query, PaginatedList<{singularName}ForListDto>>
     {{
         public async Task<PaginatedList<{singularName}ForListDto>> Handle(Get{pluralName}Query request, CancellationToken cancellationToken)
         {{
@@ -364,11 +364,11 @@ using Microsoft.EntityFrameworkCore;
 namespace Application.{pluralName}.Queries.Get{singularName}Details;
 
 [Authorize(Permissions = [Permissions.{pluralName}.Actions.Profile])]
-public sealed class Get{singularName}ByIdQuery(Guid {char.ToLower(singularName[0])}{singularName.Substring(1)}Id) : ITenantQuery<{singularName}ForReadDto>
+public sealed class Get{singularName}ByIdQuery(Guid {char.ToLower(singularName[0])}{singularName.Substring(1)}Id) : IRequest<{singularName}ForReadDto>
 {{
     public Guid {singularName}Id {{ get; }} = {char.ToLower(singularName[0])}{singularName.Substring(1)}Id;
 
-    public sealed class Handler(ITenantDbContext dbContext) : IRequestHandler<Get{singularName}ByIdQuery, {singularName}ForReadDto>
+    public sealed class Handler(IApplicationDbContext dbContext) : IRequestHandler<Get{singularName}ByIdQuery, {singularName}ForReadDto>
     {{
         public async Task<{singularName}ForReadDto> Handle(Get{singularName}ByIdQuery request, CancellationToken cancellationToken)
         {{";
@@ -445,12 +445,12 @@ using Application.{pluralName}.Events;";
 namespace Application.{pluralName}.Commands.Update{singularName};
 
 [Authorize(Permissions = [Permissions.{pluralName}.Actions.Update])]
-public sealed class Update{singularName}Command(Guid {singularName.ToLower()}Id, {singularName}ForCreateUpdateDto {singularName.ToLower()}Dto) : ITenantCommand<Unit>
+public sealed class Update{singularName}Command(Guid {singularName.ToLower()}Id, {singularName}ForCreateUpdateDto {singularName.ToLower()}Dto) : IRequest<Unit>
 {{
     public Guid {singularName}Id {{ get; }} = {singularName.ToLower()}Id;
     public {singularName}ForCreateUpdateDto {singularName}Dto {{ get; }} = {singularName.ToLower()}Dto;
 
-    public sealed class Handler(ITenantDbContext dbContext";
+    public sealed class Handler(IApplicationDbContext dbContext";
 
         if (config.CodeGeneration.GenerateEvents)
         {
@@ -532,11 +532,11 @@ using Application.{pluralName}.Events;";
 namespace Application.{pluralName}.Commands.Delete{singularName};
 
 [Authorize(Permissions = [Permissions.{pluralName}.Actions.Delete])]
-public sealed class Delete{singularName}Command(Guid {singularName.ToLower()}Id) : ITenantCommand<Unit>
+public sealed class Delete{singularName}Command(Guid {singularName.ToLower()}Id) : IRequest<Unit>
 {{
     public Guid {singularName}Id {{ get; }} = {singularName.ToLower()}Id;
 
-    public sealed class Handler(ITenantDbContext dbContext";
+    public sealed class Handler(IApplicationDbContext dbContext";
 
         if (config.CodeGeneration.GenerateEvents)
         {
@@ -820,7 +820,7 @@ public sealed class {singularName}CreatedEvent(Guid {singularName.ToLower()}Id) 
 {{
     public Guid {singularName}Id {{ get; }} = {singularName.ToLower()}Id;
 
-    public sealed class Handler(ITenantDbContext dbContext) : INotificationHandler<{singularName}CreatedEvent>
+    public sealed class Handler(IApplicationDbContext dbContext) : INotificationHandler<{singularName}CreatedEvent>
     {{
         public async Task Handle({singularName}CreatedEvent notification, CancellationToken cancellationToken)
         {{
@@ -856,7 +856,7 @@ public sealed class {singularName}UpdatedEvent(Guid {singularName.ToLower()}Id) 
 {{
     public Guid {singularName}Id {{ get; }} = {singularName.ToLower()}Id;
 
-    public sealed class Handler(ITenantDbContext dbContext) : INotificationHandler<{singularName}UpdatedEvent>
+    public sealed class Handler(IApplicationDbContext dbContext) : INotificationHandler<{singularName}UpdatedEvent>
     {{
         public async Task Handle({singularName}UpdatedEvent notification, CancellationToken cancellationToken)
         {{
@@ -926,8 +926,8 @@ public sealed class {singularName}MappingProfile : IRegister
     {
         AnsiConsole.MarkupLine("");
         AnsiConsole.MarkupLine("[yellow]Manual steps required:[/]");
-        AnsiConsole.MarkupLine($"1. Add DbSet<{singularName}> {pluralName} to ITenantDbContext and TenantDbContext");
-        AnsiConsole.MarkupLine($"2. Add {singularName}Configuration to TenantDbContext.OnModelCreating");
+        AnsiConsole.MarkupLine($"1. Add DbSet<{singularName}> {pluralName} to IApplicationDbContext and ApplicationDbContext");
+        AnsiConsole.MarkupLine($"2. Add {singularName}Configuration to ApplicationDbContext.OnModelCreating");
         AnsiConsole.MarkupLine($"3. Add {pluralName}Permissions to PermissionsProvider");
         AnsiConsole.MarkupLine($"4. Run database migration: dotnet ef migrations add Add{singularName}Entity");
         AnsiConsole.MarkupLine("");

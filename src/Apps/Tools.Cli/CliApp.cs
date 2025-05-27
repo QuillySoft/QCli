@@ -11,11 +11,10 @@ public sealed class CliApp(IServiceProvider serviceProvider)
     private TCommand GetCmd<TCommand>() where TCommand : notnull => serviceProvider.GetRequiredService<TCommand>();
 
     public int Execute(string[] args)
-    {
-        var app = new CommandLineApplication
+    {        var app = new CommandLineApplication
         {
             Name = "qcli",
-            Description = "🚀 QCLI - A powerful CLI tool for generating CRUD operations and managing CLIO architecture projects",
+            Description = "🚀 QCLI - A powerful CLI tool for generating CRUD operations and managing Clean Architecture projects",
         };
 
         app.HelpOption(true);
@@ -83,11 +82,10 @@ public sealed class CliApp(IServiceProvider serviceProvider)
         {
             init.Description = "🏗️ Initialize QCLI in a new or existing project";
             
-            var forceOption = init.Option("-f|--force", "Overwrite existing configuration", CommandOptionType.NoValue);
-            var templateOption = init.Option("-t|--template <template>", "Project template (clio, minimal, ddd)", CommandOptionType.SingleValue);
+            var forceOption = init.Option("-f|--force", "Overwrite existing configuration", CommandOptionType.NoValue);            var templateOption = init.Option("-t|--template <template>", "Project template (clean-architecture, minimal, ddd)", CommandOptionType.SingleValue);
             var interactiveOption = init.Option("-i|--interactive", "Use interactive mode", CommandOptionType.NoValue);
             
-            templateOption.DefaultValue = "clio";
+            templateOption.DefaultValue = "clean-architecture";
 
             init.OnExecute(() =>
             {
@@ -107,7 +105,7 @@ public sealed class CliApp(IServiceProvider serviceProvider)
             var templateOption = scaffold.Option("-t|--template <template>", "Project template", CommandOptionType.SingleValue);
             var pathOption = scaffold.Option("-p|--path <path>", "Output path", CommandOptionType.SingleValue);
             
-            templateOption.DefaultValue = "clio";
+            templateOption.DefaultValue = "clean-architecture";
 
             scaffold.OnExecute(() =>
             {
@@ -179,7 +177,7 @@ public sealed class CliApp(IServiceProvider serviceProvider)
     {
         var panel = new Panel(new Markup(
             "[bold blue]🚀 Welcome to QCLI![/]\n\n" +
-            "[yellow]A powerful CLI tool for generating CRUD operations and managing CLIO architecture projects.[/]\n\n" +
+            "[yellow]A powerful CLI tool for generating CRUD operations and managing Clean Architecture projects.[/]\n\n" +
             "[dim]Quick Start:[/]\n" +
             "• [green]qcli init[/] - Initialize QCLI in your project\n" +
             "• [green]qcli add Order --all[/] - Generate complete CRUD for Order entity\n" +

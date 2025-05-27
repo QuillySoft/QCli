@@ -23,11 +23,11 @@ public sealed class ListCommand(ITemplateEngine templateEngine)
 
         var templates = new[]
         {
-            new { Name = "clio", Description = "Complete CLIO architecture with all layers", Status = "✅ Default" },
-            new { Name = "minimal", Description = "Minimal setup with basic layers", Status = "✅ Available" },
-            new { Name = "ddd", Description = "Domain-Driven Design with rich domain model", Status = "✅ Available" },
+            new { Name = "clean-architecture", Description = "Complete Clean Architecture with all layers", Status = "✅ Default" },
+            new { Name = "minimal", Description = "Minimal setup with basic layers", Status = "🚧 Coming Soon" },
+            new { Name = "ddd", Description = "Domain-Driven Design with rich domain model", Status = "🚧 Coming Soon" },
             new { Name = "microservice", Description = "Microservice template with API Gateway", Status = "🚧 Coming Soon" },
-            new { Name = "blazor", Description = "Blazor Server/WASM with CLIO backend", Status = "🚧 Coming Soon" }
+            new { Name = "blazor", Description = "Blazor Server/WASM with Clean Architecture backend", Status = "🚧 Coming Soon" }
         };
 
         var table = new Table();

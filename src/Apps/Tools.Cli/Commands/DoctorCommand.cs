@@ -119,7 +119,7 @@ public sealed class DoctorCommand
                 issues.Add(new DiagnosticIssue(
                     IssueSeverity.Info,
                     "Architecture folders not detected",
-                    "Standard CLIO architecture folders not found",
+                    "Standard Clean Architecture folders not found",
                     "Consider running 'qcli scaffold' for new projects"
                 ));
             }

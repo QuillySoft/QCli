@@ -10,7 +10,7 @@
         <ToolCommandName>qcli</ToolCommandName>
         <PackageId>QuillySOFT.CLI</PackageId>        <PackageVersion>1.0.0</PackageVersion>
         <Authors>QuillySOFT</Authors>
-        <Description>A powerful CLI tool for generating CRUD operations, boilerplate code, and managing CLIO architecture projects</Description>        <PackageTags>crud;cli;clio;architecture;code-generation;clean-architecture;ddd;scaffolding;dotnet-tool</PackageTags>
+        <Description>A powerful CLI tool for generating CRUD operations, boilerplate code, and managing Clean Architecture projects</Description>        <PackageTags>crud;cli;clean-architecture;code-generation;ddd;scaffolding;dotnet-tool</PackageTags>
         <RepositoryUrl>https://github.com/QuillySoft/QCli</RepositoryUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>

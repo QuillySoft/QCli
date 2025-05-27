@@ -73,7 +73,7 @@ public sealed class UpdateCommand
 
         var templates = new[]
         {
-            new { Name = "clio", Version = "1.1.0", HasUpdate = true },
+            new { Name = "clean-architecture", Version = "1.1.0", HasUpdate = true },
             new { Name = "minimal", Version = "1.0.0", HasUpdate = false },
             new { Name = "ddd", Version = "1.0.1", HasUpdate = true }
         };

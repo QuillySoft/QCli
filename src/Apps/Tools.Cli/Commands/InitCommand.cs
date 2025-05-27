@@ -49,9 +49,9 @@ public sealed class InitCommand(ITemplateEngine templateEngine)
         return 0;
     }
 
-    private EnhancedCliConfiguration CreateInteractiveConfiguration()
+    private CliConfiguration CreateInteractiveConfiguration()
     {
-        var config = new EnhancedCliConfiguration();
+        var config = new CliConfiguration();
 
         AnsiConsole.MarkupLine("[yellow]📝 Let's set up your project configuration...[/]");
         
@@ -76,19 +76,19 @@ public sealed class InitCommand(ITemplateEngine templateEngine)
         return config;
     }
 
-    private EnhancedCliConfiguration CreateDefaultConfiguration(string? template)
+    private CliConfiguration CreateDefaultConfiguration(string? template)
     {
         return template?.ToLower() switch
         {
             "minimal" => CreateMinimalConfiguration(),
             "ddd" => CreateDddConfiguration(),
-            _ => CreateClioConfiguration()
+            _ => CreateCleanArchitectureConfiguration()
         };
     }
 
-    private EnhancedCliConfiguration CreateClioConfiguration()
+    private CliConfiguration CreateCleanArchitectureConfiguration()
     {
-        return new EnhancedCliConfiguration
+        return new CliConfiguration
         {
             Project = new ProjectInfo
             {
@@ -98,26 +98,26 @@ public sealed class InitCommand(ITemplateEngine templateEngine)
         };
     }
 
-    private EnhancedCliConfiguration CreateMinimalConfiguration()
+    private CliConfiguration CreateMinimalConfiguration()
     {
-        var config = CreateClioConfiguration();
+        var config = CreateCleanArchitectureConfiguration();
         config.CodeGeneration.GenerateEvents = false;
         config.CodeGeneration.GenerateMappingProfiles = false;
         return config;
     }
 
-    private EnhancedCliConfiguration CreateDddConfiguration()
+    private CliConfiguration CreateDddConfiguration()
     {
-        var config = CreateClioConfiguration();
+        var config = CreateCleanArchitectureConfiguration();
         config.CodeGeneration.GenerateEvents = true;
         config.CodeGeneration.GeneratePermissions = true;
         return config;
     }
 }
 
-public sealed class ConfigurationValidator : IValidator<EnhancedCliConfiguration>
+public sealed class ConfigurationValidator : IValidator<CliConfiguration>
 {
-    public Tools.Cli.Validation.ValidationResult Validate(EnhancedCliConfiguration config)
+    public Tools.Cli.Validation.ValidationResult Validate(CliConfiguration config)
     {
         var errors = new List<ValidationError>();
 
