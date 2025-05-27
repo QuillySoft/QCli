@@ -7,6 +7,7 @@ namespace Tools.Cli.Commands;
 
 public sealed class InitCommand(ITemplateEngine templateEngine)
 {
+    private readonly ITemplateEngine _templateEngine = templateEngine;
     public int Execute(bool force, string? template, bool interactive)
     {
         AnsiConsole.MarkupLine("[green]🏗️ Initializing QCLI project...[/]");

@@ -5,6 +5,7 @@ namespace Tools.Cli.Commands;
 
 public sealed class ListCommand(ITemplateEngine templateEngine)
 {
+    private readonly ITemplateEngine _templateEngine = templateEngine;
     public int Execute(string type)
     {
         return type.ToLower() switch

@@ -1,72 +1,97 @@
-# QuillySOFT CLI
+# QuillySOFT CLI (QCLI)
 
-A powerful CLI tool for generating CRUD operations in CLIO architecture projects.
+A powerful CLI tool for generating CRUD operations in CLIO (Clean, Layered, Integrated, Organized) architecture projects.
 
-## Installation
+## 🚀 Quick Start
 
-### From NuGet (Private Feed)
 ```bash
-dotnet tool install --global QuillySOFT.CLI --add-source https://your-private-nuget-feed.com/v3/index.json
-```
-
-### From Source
-```bash
+# 1. Build and install
 git clone https://github.com/QuillySoft/QCli
-cd qcli/src/Apps/Tools.Cli
-dotnet pack
-dotnet tool install --global --add-source ./nupkg QuillySOFT.CLI
-```
+cd QCli/src/Apps/Tools.Cli
+dotnet pack -c Release
+dotnet tool install --global --add-source ./bin/Release QuillySOFT.CLI
 
-## Usage
-
-### Initialize Configuration
-Before using the tool, initialize the configuration in your project:
-
-```bash
+# 2. Initialize in your project
 cd /path/to/your/clio/project
-qcli config init
-```
+qcli init
 
-This will create a `qcli.json` configuration file with auto-detected paths.
-
-### Generate CRUD Operations
-
-#### Generate all CRUD operations for an entity:
-```bash
+# 3. Generate your first entity
 qcli add Order --all
 ```
 
-#### Generate specific operations:
-```bash
-qcli add Order --create --read
-qcli add Product --update --delete
+## 📋 Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `init` | Initialize QCLI in project | `qcli init --interactive` |
+| `add` | Generate CRUD operations | `qcli add Order --all --dry-run` |
+| `config` | Manage configuration | `qcli config show` |
+| `doctor` | Diagnose issues | `qcli doctor --fix` |
+| `scaffold` | Create new project | `qcli scaffold MyApi` |
+
+### Add Command Options
+- `--all` - Generate complete CRUD (create, read, update, delete)
+- `--create`, `--read`, `--update`, `--delete` - Generate specific operations
+- `--entity-type` - Specify Audited or FullyAudited
+- `--dry-run` - Preview without creating files
+- `--no-tests`, `--no-permissions` - Skip generating tests/permissions
+
+## 🔧 What Gets Generated
+
+When you run `qcli add Order --all`:
+
+```
+├── Domain/Orders/Order.cs (entity + permissions)
+├── Application/Orders/
+│   ├── Commands/ (Create, Update, Delete + handlers)
+│   └── Queries/ (GetAll, GetById + handlers)
+├── Infrastructure/OrderConfiguration.cs
+├── WebApi/OrdersController.cs
+└── Tests/ (unit + integration tests)
 ```
 
-#### Generate with custom entity type:
-```bash
-qcli add Order --all --entity-type FullyAudited
+## ⚙️ Configuration
+
+Auto-generated `qcli.json`:
+```json
+{
+  "projectType": "CLIO",
+  "paths": {
+    "rootPath": "c:\\projects\\MyProject",
+    "apiPath": "src\\Apps\\Api",
+    "applicationPath": "src\\Core\\Application",
+    "domainPath": "src\\Core\\Domain",
+    "persistencePath": "src\\Infra\\Persistence"
+  },
+  "codeGeneration": {
+    "defaultEntityType": "Audited",
+    "generatePermissions": true,
+    "generateTests": true
+  }
+}
 ```
 
-### Configuration Management
+## 🏗️ Manual Steps After Generation
 
-#### Show current configuration:
-```bash
-qcli config show
-```
+1. Add DbSet: `public DbSet<Order> Orders { get; set; }`
+2. Register config: `modelBuilder.ApplyConfiguration(new OrderConfiguration());`
+3. Add permissions to provider
+4. Run migration: `dotnet ef migrations add AddOrderEntity`
 
-#### Generate sample configuration:
-```bash
-qcli config sample
-```
+## 🛠️ Troubleshooting
 
-#### Set configuration values:
-```bash
-qcli config set --key rootpath --value "c:\projects\MyProject"
-```
+**Command not found?** Ensure .NET tools are in PATH
+**Permission errors?** Run with elevated privileges
+**Template errors?** Run `qcli doctor --fix`
 
-## Configuration File
+Get help: `qcli [command] --help`
 
-The tool uses a `qcli.json` configuration file to define project paths and settings. Here's a sample:
+---
+*Private tool for QuillySOFT projects*
+
+## ⚙️ Configuration
+
+The tool uses `qcli.json` for project-specific configuration:
 
 ```json
 {
@@ -77,87 +102,35 @@ The tool uses a `qcli.json` configuration file to define project paths and setti
     "applicationPath": "src\\Core\\Application",
     "domainPath": "src\\Core\\Domain",
     "persistencePath": "src\\Infra\\Persistence",
-    "applicationTestsPath": "tests\\Application\\ApplicationTests",
-    "integrationTestsPath": "tests\\Infra\\InfraTests\\Controllers",
+    "applicationTestsPath": "tests\\Application",
+    "integrationTestsPath": "tests\\Integration",
     "controllersPath": "src\\Apps\\Api\\Controllers"
   },
   "codeGeneration": {
     "defaultEntityType": "Audited",
     "generateEvents": false,
-    "generateMappingProfiles": false,
     "generatePermissions": true,
     "generateTests": true
   }
 }
 ```
 
-## What Gets Generated
+## 🏗️ Manual Steps After Generation
 
-When you run `qcli add Order --all`, the tool generates:
-
-### Domain Layer
-- `Order.cs` - Domain entity
-- `OrdersPermissions.cs` - Permission constants
-
-### Application Layer
-- **Commands:**
-  - `CreateOrderCommand.cs` + Handler + Validator
-  - `UpdateOrderCommand.cs` + Handler + Validator
-  - `DeleteOrderCommand.cs` + Handler + Validator
-- **Queries:**
-  - `GetOrdersQuery.cs` + Handler (paginated list)
-  - `GetOrderByIdQuery.cs` + Handler
-- **Events:** (if enabled)
-  - `OrderCreatedEvent.cs`
-  - `OrderUpdatedEvent.cs`
-  - `OrderDeletedEvent.cs`
-
-### Infrastructure Layer
-- `OrderConfiguration.cs` - Entity Framework configuration
-
-### API Layer
-- `OrdersController.cs` - REST API controller
-
-### Tests
-- Unit tests for all commands and queries
-- Integration tests for the controller
-
-## Command Options
-
-### `add` command options:
-- `--all, -a` - Generate all CRUD operations
-- `--create, -c` - Generate create operation only
-- `--read, -r` - Generate read operations only
-- `--update, -u` - Generate update operation only
-- `--delete, -d` - Generate delete operation only
-- `--entity-type, -e` - Specify entity type (Audited or FullyAudited)
-
-### `config` command options:
-- `init` - Initialize configuration file
-- `show` - Display current configuration
-- `set` - Set a configuration value
-- `get` - Get a configuration value
-- `sample` - Generate sample configuration file
-
-## Manual Steps After Generation
-
-After running the tool, you'll need to complete these manual steps:
+After running the tool, complete these steps:
 
 1. **Add DbSet to DbContext:**
    ```csharp
-   // In ITenantDbContext and TenantDbContext
    public DbSet<Order> Orders { get; set; }
    ```
 
 2. **Register Entity Configuration:**
    ```csharp
-   // In TenantDbContext.OnModelCreating
    modelBuilder.ApplyConfiguration(new OrderConfiguration());
    ```
 
 3. **Add Permissions to Provider:**
    ```csharp
-   // In PermissionsProvider
    OrdersPermissions.View,
    OrdersPermissions.Create,
    OrdersPermissions.Edit,
@@ -170,21 +143,20 @@ After running the tool, you'll need to complete these manual steps:
    dotnet ef database update
    ```
 
-## Architecture Support
+## 🎯 Architecture Support
 
-Currently supports the **CLIO architecture pattern** with:
-- Clean Architecture principles
-- CQRS with MediatR
-- Domain-Driven Design
-- Entity Framework Core
-- ASP.NET Core Web API
-- FluentValidation
-- Permission-based authorization
+- **Clean Architecture** with dependency inversion
+- **CQRS** with MediatR for command/query separation  
+- **Domain-Driven Design** patterns
+- **Entity Framework Core** for data persistence
+- **ASP.NET Core** Web API
+- **FluentValidation** for input validation
+- **Permission-based authorization**
 
-## Contributing
+## 🤝 Contributing
 
 This is a private tool for QuillySOFT projects. Contact the development team for access and contribution guidelines.
 
-## License
+## 📄 License
 
 Private software - All rights reserved by QuillySOFT.
