@@ -12,9 +12,10 @@ var configuration = new ConfigurationBuilder()
 var services = new ServiceCollection();
 services.AddSingleton<IConfiguration>(configuration);
 
-services.AddTransient<SetupCommand>();
+// Register commands
+services.AddTransient<SetupCommand>(); // Keep for backward compatibility
+services.AddTransient<ConfigCommand>();
 services.AddLogging();
-
 
 var cliApp = new CliApp(services.BuildServiceProvider(true));
 try

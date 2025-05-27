@@ -5,9 +5,18 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-    </PropertyGroup>
-
-    <ItemGroup>
+        
+        <!-- Global Tool Configuration -->
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>quillysoft-cli</ToolCommandName>
+        <PackageId>QuillySOFT.CLI</PackageId>
+        <PackageVersion>1.0.0</PackageVersion>
+        <Authors>QuillySOFT</Authors>
+        <Description>A CLI tool for generating CRUD operations in CLIO architecture projects</Description>
+        <PackageTags>crud;cli;clio;architecture;code-generation</PackageTags>
+        <RepositoryUrl>https://github.com/quillysoft/quillysoft-cli</RepositoryUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>    <ItemGroup>
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
@@ -18,6 +27,7 @@
         <PackageReference Include="Spectre.Console" Version="0.49.1"/>
         <PackageReference Include="Spectre.Console.Json" Version="0.49.1"/>
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1"/>
+        <PackageReference Include="System.Text.Json" Version="8.0.5"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11"/>
     </ItemGroup>
 
