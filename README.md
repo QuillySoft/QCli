@@ -50,45 +50,7 @@ When you run `qcli add Order --all`:
 └── Tests/ (unit + integration tests)
 ```
 
-## ⚙️ Configuration
-
-Auto-generated `qcli.json`:
-```json
-{
-  "projectType": "CLIO",
-  "paths": {
-    "rootPath": "c:\\projects\\MyProject",
-    "apiPath": "src\\Apps\\Api",
-    "applicationPath": "src\\Core\\Application",
-    "domainPath": "src\\Core\\Domain",
-    "persistencePath": "src\\Infra\\Persistence"
-  },
-  "codeGeneration": {
-    "defaultEntityType": "Audited",
-    "generatePermissions": true,
-    "generateTests": true
-  }
-}
-```
-
-## 🏗️ Manual Steps After Generation
-
-1. Add DbSet: `public DbSet<Order> Orders { get; set; }`
-2. Register config: `modelBuilder.ApplyConfiguration(new OrderConfiguration());`
-3. Add permissions to provider
-4. Run migration: `dotnet ef migrations add AddOrderEntity`
-
-## 🛠️ Troubleshooting
-
-**Command not found?** Ensure .NET tools are in PATH
-**Permission errors?** Run with elevated privileges
-**Template errors?** Run `qcli doctor --fix`
-
-Get help: `qcli [command] --help`
-
 ---
-*Private tool for QuillySOFT projects*
-
 ## ⚙️ Configuration
 
 The tool uses `qcli.json` for project-specific configuration:
@@ -152,6 +114,14 @@ After running the tool, complete these steps:
 - **ASP.NET Core** Web API
 - **FluentValidation** for input validation
 - **Permission-based authorization**
+
+## 🛠️ Troubleshooting
+
+**Command not found?** Ensure .NET tools are in PATH
+**Permission errors?** Run with elevated privileges
+**Template errors?** Run `qcli doctor --fix`
+
+Get help: `qcli [command] --help`
 
 ## 🤝 Contributing
 

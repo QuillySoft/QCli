@@ -17,7 +17,6 @@ services.AddSingleton<IConfiguration>(configuration);
 services.AddSingleton<ITemplateEngine, TemplateEngine>();
 
 // Register commands
-services.AddTransient<SetupCommand>(); // Keep for backward compatibility
 services.AddTransient<ConfigCommand>();
 services.AddTransient<InitCommand>();
 services.AddTransient<ScaffoldCommand>();

@@ -172,28 +172,6 @@ public sealed class CliApp(IServiceProvider serviceProvider)
             });
         });
 
-        // Legacy setup command for backward compatibility
-        app.Command("setup", setup =>
-        {
-            setup.Description = "[DEPRECATED] Use 'add --all' instead. Generate boilerplate code for a new feature";
-
-            var featureName = setup.Argument<string>("name", "Feature name (e.g., 'Order' or 'Product')").IsRequired();
-            var fullOption = setup.Option("-f|--full", "Generate full implementation including events and mapping profile", CommandOptionType.NoValue);
-            var entityTypeOption = setup.Option("-e|--entity-type <type>", "Entity type to use (Audited or FullyAudited)", CommandOptionType.SingleValue);
-            entityTypeOption.DefaultValue = "Audited";
-
-            setup.OnExecute(() =>
-            {
-                var config = CliConfiguration.Load();
-                var addCommand = new AddCommand(config);
-                return addCommand.Execute(
-                    featureName.ParsedValue,
-                    true, // equivalent to --all
-                    false, false, false, false,
-                    entityTypeOption.Value() ?? "Audited");
-            });
-        });
-
         return app.Execute(args);
     }
 
