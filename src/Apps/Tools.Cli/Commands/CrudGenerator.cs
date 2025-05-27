@@ -75,7 +75,7 @@ public sealed class CrudGenerator(CliConfiguration config)
             Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Commands", $"Delete{singularName}"),
             Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Queries"),
             Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Queries", $"Get{pluralName}"),
-            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Queries", $"Get{singularName}ById"),
+            Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Queries", $"Get{singularName}Details"),
             Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Events"),
             Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Mapping"),
             Path.Combine(config.Paths.GetFullPath(config.Paths.DomainPath), pluralName),
@@ -106,9 +106,12 @@ public sealed class CrudGenerator(CliConfiguration config)
         var domainPath = Path.Combine(config.Paths.GetFullPath(config.Paths.DomainPath), pluralName);
         var entityPath = Path.Combine(domainPath, $"{singularName}.cs");
 
-        var baseEntityType = entityType == "FullyAudited"
-            ? "FullyAuditedEntity<Guid>"
-            : "AuditedEntity<Guid>";
+        var baseEntityType = entityType switch
+        {
+            "Entity" => "Entity<Guid>",
+            "FullyAudited" => "FullyAuditedEntity<Guid>", 
+            _ => "AuditedEntity<Guid>" // default
+        };
 
         var content = $@"using Domain.Common;
 
@@ -116,12 +119,23 @@ namespace Domain.{pluralName};
 
 public sealed class {singularName} : {baseEntityType}
 {{
-    public string Name {{ get; set; }} = string.Empty;
+    public string Name {{ get; private set; }}
     
     // TODO: Add your entity properties here
     
-    // Navigation properties
-    // public virtual ICollection<Related{singularName}> Related{pluralName} {{ get; set; }} = new List<Related{singularName}>();
+    private {singularName}(Guid id) : base(id)
+    {{
+    }}
+
+    public {singularName}(Guid id, string name) : this(id)
+    {{
+        Name = name;
+    }}
+
+    public void Update(string name)
+    {{
+        Name = name;
+    }}
 }}";
 
         File.WriteAllText(entityPath, content);
@@ -131,7 +145,10 @@ public sealed class {singularName} : {baseEntityType}
     private void GenerateEntityConfiguration(string singularName, string pluralName)
     {
         var configPath = Path.Combine(config.Paths.GetFullPath(config.Paths.PersistencePath), "Configurations", "Tenants", pluralName);
-        var configFile = Path.Combine(configPath, $"{singularName}Configuration.cs");
+        var configFile = Path.Combine(configPath, $"{singularName}EntityConfiguration.cs");
+
+        // Ensure directory exists
+        Directory.CreateDirectory(configPath);
 
         var content = $@"using Domain.{pluralName};
 using Microsoft.EntityFrameworkCore;
@@ -139,103 +156,101 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Persistence.Configurations.Tenants.{pluralName};
 
-public sealed class {singularName}Configuration : IEntityTypeConfiguration<{singularName}>
+public sealed class {singularName}EntityConfiguration : IEntityTypeConfiguration<{singularName}>
 {{
     public void Configure(EntityTypeBuilder<{singularName}> builder)
     {{
-        builder.ToTable(""{pluralName}"");
-        
-        builder.HasKey(x => x.Id);
-        
-        builder.Property(x => x.Name)
-            .IsRequired()
-            .HasMaxLength(256);
-            
-        // TODO: Configure additional properties
-        
-        // Indexes
-        builder.HasIndex(x => x.Name);
-        
-        // Configure audit fields
-        builder.Property(x => x.CreatedAt).IsRequired();
-        builder.Property(x => x.CreatedBy).IsRequired().HasMaxLength(256);
-        builder.Property(x => x.UpdatedAt);
-        builder.Property(x => x.UpdatedBy).HasMaxLength(256);
+        // Basic configuration for simple entities
+        // For complex entities with value objects, add OwnsOne configurations:
+        // builder.OwnsOne(x => x.Email);
+        // builder.OwnsOne(x => x.Address);
     }}
 }}";
 
         File.WriteAllText(configFile, content);
-        AnsiConsole.MarkupLine($"[green]✓ Generated entity configuration: {singularName}Configuration.cs[/]");
+        AnsiConsole.MarkupLine($"[green]✓ Generated {singularName}EntityConfiguration.cs[/]");
     }
 
     private void GenerateCreateCommand(string singularName, string pluralName)
     {
         var commandPath = Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Commands", $"Create{singularName}");
         var commandFile = Path.Combine(commandPath, $"Create{singularName}Command.cs");
-        var handlerFile = Path.Combine(commandPath, $"Create{singularName}CommandHandler.cs");
         var validatorFile = Path.Combine(commandPath, $"Create{singularName}CommandValidator.cs");
 
-        // Command
-        var commandContent = $@"using MediatR;
-
-namespace Application.{pluralName}.Commands.Create{singularName};
-
-public sealed record Create{singularName}Command(
-    string Name
-    // TODO: Add additional properties
-) : IRequest<Guid>;";
-
-        // Handler
-        var handlerContent = $@"using Application.Common.Interfaces;
+        // Command with nested Handler (matching source template)
+        var commandContent = $@"using Application.Common;
+using Application.Security;
 using Domain.{pluralName};
-using MediatR;
+using Domain.PermissionsConstants;
+using MediatR;";
+
+        if (config.CodeGeneration.GenerateEvents)
+        {
+            commandContent += $@"
+using Application.{pluralName}.Events;";
+        }
+
+        commandContent += $@"
 
 namespace Application.{pluralName}.Commands.Create{singularName};
 
-public sealed class Create{singularName}CommandHandler : IRequestHandler<Create{singularName}Command, Guid>
+[Authorize(Permissions = [Permissions.{pluralName}.Actions.Create])]
+public sealed class Create{singularName}Command({singularName}ForCreateUpdateDto {singularName.ToLower()}Dto) : ITenantCommand<Guid>
 {{
-    private readonly ITenantDbContext _context;
+    public {singularName}ForCreateUpdateDto {singularName}Dto {{ get; }} = {singularName.ToLower()}Dto;
 
-    public Create{singularName}CommandHandler(ITenantDbContext context)
-    {{
-        _context = context;
-    }}
+    public sealed class Handler(ITenantDbContext dbContext";
 
-    public async Task<Guid> Handle(Create{singularName}Command request, CancellationToken cancellationToken)
+        if (config.CodeGeneration.GenerateEvents)
+        {
+            commandContent += ", IPublisher publisher";
+        }
+
+        commandContent += $@") : IRequestHandler<Create{singularName}Command, Guid>
     {{
-        var entity = new {singularName}
+        public async Task<Guid> Handle(Create{singularName}Command request, CancellationToken cancellationToken)
         {{
-            Name = request.Name
-            // TODO: Map additional properties
-        }};
+            var {singularName.ToLower()} = new {singularName}(Guid.NewGuid(), request.{singularName}Dto.Name);
+            dbContext.{pluralName}.Add({singularName.ToLower()});
+            await dbContext.SaveChangesAsync(cancellationToken);";
 
-        _context.{pluralName}.Add(entity);
-        await _context.SaveChangesAsync(cancellationToken);
+        if (config.CodeGeneration.GenerateEvents)
+        {
+            commandContent += $@"
 
-        return entity.Id;
+            await publisher.Publish(new {singularName}CreatedEvent({singularName.ToLower()}.Id), cancellationToken);";
+        }
+
+        commandContent += $@"
+            return {singularName.ToLower()}.Id;
+        }}
     }}
+}}
+
+public record {singularName}ForCreateUpdateDto
+{{
+    public required string Name {{ get; init; }}
+    // TODO: Add additional properties
 }}";
 
-        // Validator
-        var validatorContent = $@"using FluentValidation;
+        // Validator using AppBaseAbstractValidator
+        var validatorContent = $@"using Application.Common;
 
 namespace Application.{pluralName}.Commands.Create{singularName};
 
-public sealed class Create{singularName}CommandValidator : AbstractValidator<Create{singularName}Command>
+public sealed class Create{singularName}CommandValidator : AppBaseAbstractValidator<Create{singularName}Command>
 {{
     public Create{singularName}CommandValidator()
     {{
-        RuleFor(x => x.Name)
-            .NotEmpty()
-            .MaximumLength(256);
-            
-        // TODO: Add additional validation rules
+        RuleFor(x => x.{singularName}Dto).SetValidator(new {singularName}ForCreateUpdateDtoValidator());
     }}
 }}";
 
         File.WriteAllText(commandFile, commandContent);
-        File.WriteAllText(handlerFile, handlerContent);
         File.WriteAllText(validatorFile, validatorContent);
+
+        // Generate DTO validator
+        GenerateCreateUpdateDtoValidator(singularName, pluralName);
 
         AnsiConsole.MarkupLine($"[green]✓ Generated Create{singularName} command files[/]");
     }
@@ -247,98 +262,373 @@ public sealed class Create{singularName}CommandValidator : AbstractValidator<Cre
     {
         GenerateGetAllQuery(singularName, pluralName);
         GenerateGetByIdQuery(singularName, pluralName);
+        GenerateDTOs(singularName, pluralName);
+        if (config.CodeGeneration.GenerateMappingProfiles)
+        {
+            GenerateMappingProfile(singularName, pluralName);
+        }
     }
 
     private void GenerateGetAllQuery(string singularName, string pluralName)
     {
         var queryPath = Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Queries", $"Get{pluralName}");
-        
         var queryFile = Path.Combine(queryPath, $"Get{pluralName}Query.cs");
-        var handlerFile = Path.Combine(queryPath, $"Get{pluralName}QueryHandler.cs");
 
-        var queryContent = $@"using Application.Common.Models;
-using MediatR;
-
-namespace Application.{pluralName}.Queries.Get{pluralName};
-
-public sealed record Get{pluralName}Query(
-    int PageNumber = 1,
-    int PageSize = 10,
-    string? SearchTerm = null
-) : IRequest<PaginatedList<{singularName}Dto>>;
-
-public sealed record {singularName}Dto(
-    Guid Id,
-    string Name,
-    DateTime CreatedAt
-    // TODO: Add additional properties
-);";
-
-        var handlerContent = $@"using Application.Common.Interfaces;
-using Application.Common.Models;
+        var queryContent = $@"using Application.{pluralName}.Commands.Create{singularName};
+using Application.{pluralName}.Mapping;
+using Application.Common;
+using Application.Pagination;
+using Application.Security;
+using Domain.PermissionsConstants;
+using Mapster;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.{pluralName}.Queries.Get{pluralName};
 
-public sealed class Get{pluralName}QueryHandler : IRequestHandler<Get{pluralName}Query, PaginatedList<{singularName}Dto>>
+[Authorize(Permissions = [Permissions.{pluralName}.Actions.View])]
+public sealed class Get{pluralName}Query(PaginatedRequestDto requestDto) : ITenantQuery<PaginatedList<{singularName}ForListDto>>
 {{
-    private readonly ITenantDbContext _context;
+    public PaginatedRequestDto RequestDto {{ get; }} = requestDto;
 
-    public Get{pluralName}QueryHandler(ITenantDbContext context)
+    public sealed class Handler(ITenantDbContext dbContext) : IRequestHandler<Get{pluralName}Query, PaginatedList<{singularName}ForListDto>>
     {{
-        _context = context;
-    }}
-
-    public async Task<PaginatedList<{singularName}Dto>> Handle(Get{pluralName}Query request, CancellationToken cancellationToken)
-    {{
-        var query = _context.{pluralName}.AsQueryable();
-
-        if (!string.IsNullOrEmpty(request.SearchTerm))
+        public async Task<PaginatedList<{singularName}ForListDto>> Handle(Get{pluralName}Query request, CancellationToken cancellationToken)
         {{
-            query = query.Where(x => x.Name.Contains(request.SearchTerm));
+            var query = dbContext.{pluralName}
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (string.IsNullOrWhiteSpace(request.RequestDto.Search) is false)
+            {{
+                var search = request.RequestDto.Search.ToLower();
+                query = query.Where(x => x.Name.ToLower().Contains(search));
+                // TODO: Add additional search fields as needed
+            }}";
+
+        if (config.CodeGeneration.GenerateMappingProfiles)
+        {
+            queryContent += $@"
+
+            var config = new TypeAdapterConfig();
+            config.Apply(new {singularName}MappingProfile());
+
+            return await query
+                .ProjectToType<{singularName}ForListDto>(config)
+                .PaginatedListAsync(request.RequestDto, cancellationToken);";
+        }
+        else
+        {
+            queryContent += $@"
+
+            return await query
+                .Select(x => new {singularName}ForListDto
+                {{
+                    Id = x.Id,
+                    Name = x.Name
+                    // TODO: Map additional properties
+                }})
+                .PaginatedListAsync(request.RequestDto, cancellationToken);";
+        }
+
+        queryContent += $@"
         }}
-
-        var items = await query
-            .OrderBy(x => x.Name)
-            .Select(x => new {singularName}Dto(
-                x.Id,
-                x.Name,
-                x.CreatedAt
-                // TODO: Map additional properties
-            ))
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .ToListAsync(cancellationToken);
-
-        var totalCount = await query.CountAsync(cancellationToken);
-
-        return new PaginatedList<{singularName}Dto>(items, totalCount, request.PageNumber, request.PageSize);
     }}
+}}
+
+public record {singularName}ForListDto : {singularName}ForCreateUpdateDto
+{{
+    public Guid Id {{ get; init; }}
 }}";
 
         File.WriteAllText(queryFile, queryContent);
-        File.WriteAllText(handlerFile, handlerContent);
-
-        AnsiConsole.MarkupLine($"[green]✓ Generated Get{pluralName} query files[/]");
+        AnsiConsole.MarkupLine($"[green]✓ Generated Get{pluralName} query[/]");
     }
 
     private void GenerateGetByIdQuery(string singularName, string pluralName)
     {
-        // Similar implementation for GetById query
-        AnsiConsole.MarkupLine($"[green]✓ Generated Get{singularName}ById query files[/]");
+        var queryPath = Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Queries", $"Get{singularName}Details");
+        var queryFile = Path.Combine(queryPath, $"Get{singularName}ByIdQuery.cs");
+
+        var queryContent = $@"using Application.{pluralName}.Mapping;
+using Application.{pluralName}.Queries.Get{pluralName};
+using Application.Common;
+using Application.Common.Exceptions;
+using Application.Security;
+using Domain.{pluralName};
+using Domain.PermissionsConstants;
+using Mapster;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+
+namespace Application.{pluralName}.Queries.Get{singularName}Details;
+
+[Authorize(Permissions = [Permissions.{pluralName}.Actions.Profile])]
+public sealed class Get{singularName}ByIdQuery(Guid {char.ToLower(singularName[0])}{singularName.Substring(1)}Id) : ITenantQuery<{singularName}ForReadDto>
+{{
+    public Guid {singularName}Id {{ get; }} = {char.ToLower(singularName[0])}{singularName.Substring(1)}Id;
+
+    public sealed class Handler(ITenantDbContext dbContext) : IRequestHandler<Get{singularName}ByIdQuery, {singularName}ForReadDto>
+    {{
+        public async Task<{singularName}ForReadDto> Handle(Get{singularName}ByIdQuery request, CancellationToken cancellationToken)
+        {{";
+
+        if (config.CodeGeneration.GenerateMappingProfiles)
+        {
+            queryContent += $@"
+            var config = new TypeAdapterConfig();
+            config.Apply(new {singularName}MappingProfile());
+
+            return await dbContext.{pluralName}.AsNoTracking().ProjectToType<{singularName}ForReadDto>(config).SingleOrDefaultAsync(c => c.Id == request.{singularName}Id, cancellationToken)
+                   ?? throw new NotFoundException(nameof({singularName}), request.{singularName}Id);";
+        }
+        else
+        {
+            queryContent += $@"
+            return await dbContext.{pluralName}
+                .AsNoTracking()
+                .Where(c => c.Id == request.{singularName}Id)
+                .Select(x => new {singularName}ForReadDto
+                {{
+                    Id = x.Id,
+                    Name = x.Name
+                    // TODO: Map additional properties
+                }})
+                .SingleOrDefaultAsync(cancellationToken)
+                ?? throw new NotFoundException(nameof({singularName}), request.{singularName}Id);";
+        }
+
+        queryContent += $@"
+        }}
+    }}
+}}
+
+public sealed record {singularName}ForReadDto : {singularName}ForListDto
+{{
+}}";
+
+        File.WriteAllText(queryFile, queryContent);
+        AnsiConsole.MarkupLine($"[green]✓ Generated Get{singularName}ById query[/]");
+    }
+
+    private void GenerateDTOs(string singularName, string pluralName)
+    {
+        // DTOs are now included in their respective query/command files
+        // This method could be used for separate DTO files if needed in the future
+        AnsiConsole.MarkupLine($"[green]✓ Generated {singularName} DTOs[/]");
     }
 
     private void GenerateUpdateCommand(string singularName, string pluralName)
     {
-        // Implementation for Update command
+        var commandPath = Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Commands", $"Update{singularName}");
+        var commandFile = Path.Combine(commandPath, $"Update{singularName}Command.cs");
+        var validatorFile = Path.Combine(commandPath, $"Update{singularName}CommandValidator.cs");
+
+        // Command with nested Handler (matching source template)
+        var commandContent = $@"using Application.{pluralName}.Commands.Create{singularName};
+using Application.Common;
+using Application.Common.Exceptions;
+using Application.Security;
+using Domain.{pluralName};
+using Domain.PermissionsConstants;
+using MediatR;
+using Microsoft.EntityFrameworkCore;";
+
+        if (config.CodeGeneration.GenerateEvents)
+        {
+            commandContent += $@"
+using Application.{pluralName}.Events;";
+        }
+
+        commandContent += $@"
+
+namespace Application.{pluralName}.Commands.Update{singularName};
+
+[Authorize(Permissions = [Permissions.{pluralName}.Actions.Update])]
+public sealed class Update{singularName}Command(Guid {singularName.ToLower()}Id, {singularName}ForCreateUpdateDto {singularName.ToLower()}Dto) : ITenantCommand<Unit>
+{{
+    public Guid {singularName}Id {{ get; }} = {singularName.ToLower()}Id;
+    public {singularName}ForCreateUpdateDto {singularName}Dto {{ get; }} = {singularName.ToLower()}Dto;
+
+    public sealed class Handler(ITenantDbContext dbContext";
+
+        if (config.CodeGeneration.GenerateEvents)
+        {
+            commandContent += ", IPublisher publisher";
+        }
+
+        commandContent += $@") : IRequestHandler<Update{singularName}Command, Unit>
+    {{
+        public async Task<Unit> Handle(Update{singularName}Command request, CancellationToken cancellationToken)
+        {{
+            var {singularName.ToLower()} = await dbContext.{pluralName}.SingleOrDefaultAsync(c => c.Id == request.{singularName}Id, cancellationToken)
+                         ?? throw new NotFoundException(nameof({singularName}), request.{singularName}Id);
+
+            {singularName.ToLower()}.Update(request.{singularName}Dto.Name);
+            await dbContext.SaveChangesAsync(cancellationToken);";
+
+        if (config.CodeGeneration.GenerateEvents)
+        {
+            commandContent += $@"
+
+            await publisher.Publish(new {singularName}UpdatedEvent({singularName.ToLower()}.Id), cancellationToken);";
+        }
+
+        commandContent += $@"
+
+            return Unit.Value;
+        }}
+    }}
+}}";
+
+        // Validator using AppBaseAbstractValidator
+        var validatorContent = $@"using Application.{pluralName}.Commands.Create{singularName};
+using Application.Common;
+using FluentValidation;
+
+namespace Application.{pluralName}.Commands.Update{singularName};
+
+public sealed class Update{singularName}CommandValidator : AppBaseAbstractValidator<Update{singularName}Command>
+{{
+    public Update{singularName}CommandValidator()
+    {{
+        RuleFor(x => x.{singularName}Id)
+            .NotEmpty()
+            .WithMessage(""{singularName} Id is required."");
+
+        RuleFor(x => x.{singularName}Dto).SetValidator(new {singularName}ForCreateUpdateDtoValidator());
+    }}
+}}";
+
+        File.WriteAllText(commandFile, commandContent);
+        File.WriteAllText(validatorFile, validatorContent);
+
         AnsiConsole.MarkupLine($"[green]✓ Generated Update{singularName} command files[/]");
     }
 
     private void GenerateDeleteCommand(string singularName, string pluralName)
     {
-        // Implementation for Delete command
+        var commandPath = Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Commands", $"Delete{singularName}");
+        var commandFile = Path.Combine(commandPath, $"Delete{singularName}Command.cs");
+        var validatorFile = Path.Combine(commandPath, $"Delete{singularName}CommandValidator.cs");
+
+        // Command with nested Handler (following source template pattern)
+        var commandContent = $@"using Application.Common;
+using Application.Common.Exceptions;
+using Application.Security;
+using Domain.{pluralName};
+using Domain.PermissionsConstants;
+using MediatR;
+using Microsoft.EntityFrameworkCore;";
+
+        if (config.CodeGeneration.GenerateEvents)
+        {
+            commandContent += $@"
+using Application.{pluralName}.Events;";
+        }
+
+        commandContent += $@"
+
+namespace Application.{pluralName}.Commands.Delete{singularName};
+
+[Authorize(Permissions = [Permissions.{pluralName}.Actions.Delete])]
+public sealed class Delete{singularName}Command(Guid {singularName.ToLower()}Id) : ITenantCommand<Unit>
+{{
+    public Guid {singularName}Id {{ get; }} = {singularName.ToLower()}Id;
+
+    public sealed class Handler(ITenantDbContext dbContext";
+
+        if (config.CodeGeneration.GenerateEvents)
+        {
+            commandContent += ", IPublisher publisher";
+        }
+
+        commandContent += $@") : IRequestHandler<Delete{singularName}Command, Unit>
+    {{
+        public async Task<Unit> Handle(Delete{singularName}Command request, CancellationToken cancellationToken)
+        {{
+            var {singularName.ToLower()} = await dbContext.{pluralName}.SingleOrDefaultAsync(c => c.Id == request.{singularName}Id, cancellationToken)
+                         ?? throw new NotFoundException(nameof({singularName}), request.{singularName}Id);
+
+            dbContext.{pluralName}.Remove({singularName.ToLower()});
+            await dbContext.SaveChangesAsync(cancellationToken);";
+
+        if (config.CodeGeneration.GenerateEvents)
+        {
+            commandContent += $@"
+
+            await publisher.Publish(new {singularName}DeletedEvent({singularName.ToLower()}.Id), cancellationToken);";
+        }
+
+        commandContent += $@"
+
+            return Unit.Value;
+        }}
+    }}
+}}";
+
+        // Validator using AppBaseAbstractValidator
+        var validatorContent = $@"using Application.Common;
+using FluentValidation;
+
+namespace Application.{pluralName}.Commands.Delete{singularName};
+
+public sealed class Delete{singularName}CommandValidator : AppBaseAbstractValidator<Delete{singularName}Command>
+{{
+    public Delete{singularName}CommandValidator()
+    {{
+        RuleFor(x => x.{singularName}Id)
+            .NotEmpty()
+            .WithMessage(""{singularName} Id is required."");
+    }}
+}}";
+
+        File.WriteAllText(commandFile, commandContent);
+        File.WriteAllText(validatorFile, validatorContent);
+
         AnsiConsole.MarkupLine($"[green]✓ Generated Delete{singularName} command files[/]");
+    }
+
+    private void GenerateCreateUpdateDtoValidator(string singularName, string pluralName)
+    {
+        var validatorPath = Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Commands", $"Create{singularName}");
+        var validatorFile = Path.Combine(validatorPath, $"{singularName}ForCreateUpdateDtoValidator.cs");
+
+        var validatorContent = $@"using Application.Common;
+using FluentValidation;
+
+namespace Application.{pluralName}.Commands.Create{singularName};
+
+public sealed class {singularName}ForCreateUpdateDtoValidator : AppBaseAbstractValidator<{singularName}ForCreateUpdateDto>
+{{
+    public {singularName}ForCreateUpdateDtoValidator()
+    {{
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .WithMessage(""Name is required."")
+            .Matches(NameRegex)
+            .WithMessage(""Name must contain only alphabetic characters."")
+            .MaximumLength(64)
+            .WithMessage(""Name cannot exceed 64 characters."");
+
+        // Add additional validation rules based on entity properties
+        // Examples from source template:
+        // RuleFor(x => x.Email.Primary)
+        //     .NotEmpty()
+        //     .WithMessage(""Primary Email cannot be empty."")
+        //     .EmailAddress()
+        //     .WithMessage(""Primary Email is not valid."")
+        //     .MaximumLength(64)
+        //     .WithMessage(""Primary Email cannot exceed 64 characters."");
+        //
+        // RuleFor(x => x.PreferredCurrency)
+        //     .IsInEnum()
+        //     .WithMessage(""Preferred Currency is not valid."");
+    }}
+}}";
+
+        File.WriteAllText(validatorFile, validatorContent);
+        AnsiConsole.MarkupLine($"[green]✓ Generated {singularName}ForCreateUpdateDtoValidator.cs[/]");
     }
 
     private void GenerateControllerFile(string singularName, string pluralName, List<string> operations)
@@ -346,33 +636,111 @@ public sealed class Get{pluralName}QueryHandler : IRequestHandler<Get{pluralName
         var controllerPath = config.Paths.GetFullPath(config.Paths.ControllersPath);
         var controllerFile = Path.Combine(controllerPath, $"{pluralName}Controller.cs");
 
-        var content = $@"using Application.{pluralName}.Commands.Create{singularName};
-using Application.{pluralName}.Queries.Get{pluralName};
-using Microsoft.AspNetCore.Mvc;
+        // Ensure directory exists
+        Directory.CreateDirectory(controllerPath);
+
+        // Build using statements based on operations
+        var usingStatements = new List<string>();
+
+        if (operations.Contains("Create"))
+            usingStatements.Add($"using Application.{pluralName}.Commands.Create{singularName};");
+        
+        if (operations.Contains("Update"))
+            usingStatements.Add($"using Application.{pluralName}.Commands.Update{singularName};");
+        
+        if (operations.Contains("Read"))
+        {
+            usingStatements.Add($"using Application.{pluralName}.Queries.Get{singularName}Details;");
+            usingStatements.Add($"using Application.{pluralName}.Queries.Get{pluralName};");
+        }
+
+        usingStatements.AddRange(new[]
+        {
+            "using Application.Common;",
+            "using Application.Pagination;",
+            "using MediatR;",
+            "using Microsoft.AspNetCore.Mvc;"
+        });
+
+        var content = $@"{string.Join("\n", usingStatements)}
 
 namespace Api.Controllers;
 
-public sealed class {pluralName}Controller : ApiControllerBase
+/// <summary>
+/// {pluralName} controller.
+/// </summary>
+/// <param name=""sender""></param>
+[Route(""[controller]"")]
+public sealed class {pluralName}Controller(ISender sender) : BaseController
 {{";
+
+        // Generate methods based on operations
+        if (operations.Contains("Read"))
+        {
+            content += $@"
+    /// <summary>
+    /// Get a list of {pluralName.ToLower()}.
+    /// </summary>
+    /// <param name=""requestDto""></param>
+    /// <param name=""cancellationToken""></param>
+    /// <returns></returns>
+    [HttpGet]
+    public async Task<ActionResult<PaginatedList<{singularName}ForListDto>>> Get([FromQuery] PaginatedRequestDto requestDto, CancellationToken cancellationToken)
+    {{
+        return Ok(await sender.Send(new Get{pluralName}Query(requestDto), cancellationToken));
+    }}";
+        }
 
         if (operations.Contains("Create"))
         {
             content += $@"
+
+    /// <summary>
+    /// Create a new {singularName.ToLower()}.
+    /// </summary>
+    /// <param name=""{char.ToLower(singularName[0])}{singularName.Substring(1)}ForCreateDto""></param>
+    /// <param name=""cancellationToken""></param>
+    /// <returns></returns>
     [HttpPost]
-    public async Task<ActionResult<Guid>> Create(Create{singularName}Command command)
+    public async Task<ActionResult<Guid>> Post({singularName}ForCreateUpdateDto {char.ToLower(singularName[0])}{singularName.Substring(1)}ForCreateDto, CancellationToken cancellationToken)
     {{
-        return await Mediator.Send(command);
+        return Ok(await sender.Send(new Create{singularName}Command({char.ToLower(singularName[0])}{singularName.Substring(1)}ForCreateDto), cancellationToken));
     }}";
         }
 
         if (operations.Contains("Read"))
         {
             content += $@"
-    
-    [HttpGet]
-    public async Task<ActionResult<PaginatedList<{singularName}Dto>>> GetAll([FromQuery] Get{pluralName}Query query)
+
+    /// <summary>
+    /// Get a {singularName.ToLower()} details.
+    /// </summary>
+    /// <param name=""id""></param>
+    /// <param name=""cancellationToken""></param>
+    /// <returns></returns>
+    [HttpGet(""{{id:guid}}"")]
+    public async Task<ActionResult<{singularName}ForReadDto>> GetById(Guid id, CancellationToken cancellationToken)
     {{
-        return await Mediator.Send(query);
+        return Ok(await sender.Send(new Get{singularName}ByIdQuery(id), cancellationToken));
+    }}";
+        }
+
+        if (operations.Contains("Update"))
+        {
+            content += $@"
+
+    /// <summary>
+    /// Update a {singularName.ToLower()}.
+    /// </summary>
+    /// <param name=""id""></param>
+    /// <param name=""{char.ToLower(singularName[0])}{singularName.Substring(1)}ForUpdateDto""></param>
+    /// <param name=""cancellationToken""></param>
+    /// <returns></returns>
+    [HttpPut(""{{id:guid}}"")]
+    public async Task<ActionResult> Put(Guid id, {singularName}ForCreateUpdateDto {char.ToLower(singularName[0])}{singularName.Substring(1)}ForUpdateDto, CancellationToken cancellationToken)
+    {{
+        await sender.Send(new Update{singularName}Command(id, {char.ToLower(singularName[0])}{singularName.Substring(1)}ForUpdateDto), cancellationToken);
+        return Ok();
     }}";
         }
 
@@ -388,14 +756,24 @@ public sealed class {pluralName}Controller : ApiControllerBase
         var permissionsPath = Path.Combine(config.Paths.GetFullPath(config.Paths.DomainPath), "PermissionsConstants");
         var permissionsFile = Path.Combine(permissionsPath, $"{pluralName}Permissions.cs");
 
+        // Ensure directory exists
+        Directory.CreateDirectory(permissionsPath);
+
         var content = $@"namespace Domain.PermissionsConstants;
 
-public static class {pluralName}Permissions
+public static partial class Permissions
 {{
-    public const string View = ""Permissions.{pluralName}.View"";
-    public const string Create = ""Permissions.{pluralName}.Create"";
-    public const string Edit = ""Permissions.{pluralName}.Edit"";
-    public const string Delete = ""Permissions.{pluralName}.Delete"";
+    public static class {pluralName}
+    {{
+        public static class Actions
+        {{
+            public const string View = ""Permissions:{pluralName}:View"";
+            public const string Profile = ""Permissions:{pluralName}:Profile"";
+            public const string Create = ""Permissions:{pluralName}:Create"";
+            public const string Update = ""Permissions:{pluralName}:Update"";
+            public const string Delete = ""Permissions:{pluralName}:Delete"";
+        }}
+    }}
 }}";
 
         File.WriteAllText(permissionsFile, content);
@@ -425,12 +803,123 @@ public static class {pluralName}Permissions
 
     private void GenerateEvents(string singularName, string pluralName) 
     {
-        AnsiConsole.MarkupLine($"[green]✓ Generated {singularName} domain events[/]");
+        var eventsPath = Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Events");
+        Directory.CreateDirectory(eventsPath);
+
+        // Generate Created Event
+        var createdEventFile = Path.Combine(eventsPath, $"{singularName}CreatedEvent.cs");
+        var createdEventContent = $@"using Application.Common;
+using Application.Common.Exceptions;
+using Domain.AuditLogs;
+using Domain.{pluralName};
+using MediatR;
+
+namespace Application.{pluralName}.Events;
+
+public sealed class {singularName}CreatedEvent(Guid {singularName.ToLower()}Id) : INotification
+{{
+    public Guid {singularName}Id {{ get; }} = {singularName.ToLower()}Id;
+
+    public sealed class Handler(ITenantDbContext dbContext) : INotificationHandler<{singularName}CreatedEvent>
+    {{
+        public async Task Handle({singularName}CreatedEvent notification, CancellationToken cancellationToken)
+        {{
+            var {singularName.ToLower()} = await dbContext.{pluralName}.FindAsync(notification.{singularName}Id) ?? throw new NotFoundException(nameof({singularName}), notification.{singularName}Id);
+
+            await AddAuditLog({singularName.ToLower()}, cancellationToken);
+        }}
+
+        private async Task AddAuditLog({singularName} {singularName.ToLower()}, CancellationToken cancellationToken)
+        {{
+            var auditLog = new AuditLog(Guid.NewGuid(), ActorType.User, ""{singularName} Created"", AuditLogEventType.{singularName}Created);
+
+            auditLog.Set{singularName}({singularName.ToLower()});
+            dbContext.AuditLogs.Add(auditLog);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }}
+    }}
+}}";
+
+        File.WriteAllText(createdEventFile, createdEventContent);
+
+        // Generate Updated Event
+        var updatedEventFile = Path.Combine(eventsPath, $"{singularName}UpdatedEvent.cs");
+        var updatedEventContent = $@"using Application.Common;
+using Application.Common.Exceptions;
+using Domain.AuditLogs;
+using Domain.{pluralName};
+using MediatR;
+
+namespace Application.{pluralName}.Events;
+
+public sealed class {singularName}UpdatedEvent(Guid {singularName.ToLower()}Id) : INotification
+{{
+    public Guid {singularName}Id {{ get; }} = {singularName.ToLower()}Id;
+
+    public sealed class Handler(ITenantDbContext dbContext) : INotificationHandler<{singularName}UpdatedEvent>
+    {{
+        public async Task Handle({singularName}UpdatedEvent notification, CancellationToken cancellationToken)
+        {{
+            var {singularName.ToLower()} = await dbContext.{pluralName}.FindAsync(notification.{singularName}Id) ?? throw new NotFoundException(nameof({singularName}), notification.{singularName}Id);
+
+            await AddAuditLog({singularName.ToLower()}, cancellationToken);
+        }}
+
+        private async Task AddAuditLog({singularName} {singularName.ToLower()}, CancellationToken cancellationToken)
+        {{
+            var auditLog = new AuditLog(Guid.NewGuid(), ActorType.User, ""{singularName} Updated"", AuditLogEventType.{singularName}Updated);
+
+            auditLog.Set{singularName}({singularName.ToLower()});
+            dbContext.AuditLogs.Add(auditLog);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }}
+    }}
+}}";
+
+        File.WriteAllText(updatedEventFile, updatedEventContent);
+
+        AnsiConsole.MarkupLine($"[green]✓ Generated {singularName}CreatedEvent.cs and {singularName}UpdatedEvent.cs[/]");
     }
 
     private void GenerateMappingProfile(string singularName, string pluralName) 
     {
-        AnsiConsole.MarkupLine($"[green]✓ Generated {singularName} mapping profile[/]");
+        var mappingPath = Path.Combine(config.Paths.GetFullPath(config.Paths.ApplicationPath), pluralName, "Mapping");
+        var mappingFile = Path.Combine(mappingPath, $"{singularName}MappingProfile.cs");
+
+        // Ensure directory exists
+        Directory.CreateDirectory(mappingPath);
+
+        var mappingContent = $@"using Application.{pluralName}.Queries.Get{singularName}Details;
+using Application.{pluralName}.Queries.Get{pluralName};
+using Domain.{pluralName};
+using Mapster;
+
+namespace Application.{pluralName}.Mapping;
+
+public sealed class {singularName}MappingProfile : IRegister
+{{
+    public void Register(TypeAdapterConfig config)
+    {{
+        config.ForType<{singularName}, {singularName}ForListDto>()
+            .Map(dest => dest.Id, src => src.Id)
+            .Map(dest => dest.Name, src => src.Name);
+            // Add additional property mappings for complex properties:
+            // .Map(dest => dest.Email, src => src.Email)
+            // .Map(dest => dest.Address, src => src.Address)
+            // .Map(dest => dest.PreferredCurrency, src => src.PreferredCurrency);
+
+        config.ForType<{singularName}, {singularName}ForReadDto>()
+            .Map(dest => dest.Id, src => src.Id)
+            .Map(dest => dest.Name, src => src.Name);
+            // Add additional property mappings for complex properties:
+            // .Map(dest => dest.Email, src => src.Email)
+            // .Map(dest => dest.Address, src => src.Address)
+            // .Map(dest => dest.PreferredCurrency, src => src.PreferredCurrency);
+    }}
+}}";
+
+        File.WriteAllText(mappingFile, mappingContent);
+        AnsiConsole.MarkupLine($"[green]✓ Generated {singularName}MappingProfile.cs[/]");
     }
 
     private void DisplayInstructions(string singularName, string pluralName)
