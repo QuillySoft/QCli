@@ -1188,7 +1188,7 @@ public static partial class Permissions
     private void DisplayPermissionsInstructions(string singularName, string pluralFeatureName)
     {
         AnsiConsole.MarkupLine($"[yellow]Manual Step Required:[/] Update Authorization in Commands and Queries");
-        AnsiConsole.MarkupLine($"[blue]1. Uncomment the [Authorize] attributes in your queries and commands[/]");
+        AnsiConsole.MarkupLine($"[blue]1. Uncomment the [[Authorize]] attributes in your queries and commands[/]");
         AnsiConsole.MarkupLine($"[blue]2. To use permissions in your controllers or handlers, add:[/]");
         AnsiConsole.MarkupLine($"[green]   using Domain.PermissionsConstants;[/]");
         AnsiConsole.WriteLine();
