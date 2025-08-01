@@ -324,7 +324,7 @@ public sealed class Get{pluralName}Query(PaginatedRequestDto requestDto) : IRequ
     }}
 }}
 
-public record {singularName}ForListDto : {singularName}ForCreateUpdateDto
+public record {singularName}ForListDto : AuditedDto
 {{
     public Guid Id {{ get; init; }}
 }}";
@@ -876,7 +876,7 @@ public sealed class {singularName}MappingProfile : IRegister
             .Map(dest => dest.Name, src => src.Name);
 
         config.ForType<{singularName}, {singularName}ForReadDto>()
-            .InheritsFrom<{singularName}ForListDto>();
+            .Inherits<{singularName}ForListDto>();
     }}
 }}";
 
