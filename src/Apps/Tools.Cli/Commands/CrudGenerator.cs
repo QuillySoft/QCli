@@ -121,8 +121,6 @@ public sealed class {singularName} : {baseEntityType}
 {{
     public string Name {{ get; private set; }}
     
-    // TODO: Add your entity properties here
-    
     private {singularName}(Guid id) : base(id)
     {{
     }}
@@ -160,10 +158,6 @@ public sealed class {singularName}EntityConfiguration : IEntityTypeConfiguration
 {{
     public void Configure(EntityTypeBuilder<{singularName}> builder)
     {{
-        // Basic configuration for simple entities
-        // For complex entities with value objects, add OwnsOne configurations:
-        // builder.OwnsOne(x => x.Email);
-        // builder.OwnsOne(x => x.Address);
     }}
 }}";
 
@@ -230,7 +224,6 @@ public sealed class Create{singularName}Command({singularName}ForCreateUpdateDto
 public record {singularName}ForCreateUpdateDto
 {{
     public required string Name {{ get; init; }}
-    // TODO: Add additional properties
 }}";
 
         // Validator using AppBaseAbstractValidator
@@ -303,18 +296,14 @@ public sealed class Get{pluralName}Query(PaginatedRequestDto requestDto) : IRequ
             {{
                 var search = request.RequestDto.Search.ToLower();
                 query = query.Where(x => x.Name.ToLower().Contains(search));
-                // TODO: Add additional search fields as needed
             }}";
 
         if (config.CodeGeneration.GenerateMappingProfiles)
         {
             queryContent += $@"
 
-            var config = new TypeAdapterConfig();
-            config.Apply(new {singularName}MappingProfile());
-
             return await query
-                .ProjectToType<{singularName}ForListDto>(config)
+                .ProjectToType<{singularName}ForListDto>(TypeAdapterConfig.GlobalSettings)
                 .PaginatedListAsync(request.RequestDto, cancellationToken);";
         }
         else
@@ -326,7 +315,6 @@ public sealed class Get{pluralName}Query(PaginatedRequestDto requestDto) : IRequ
                 {{
                     Id = x.Id,
                     Name = x.Name
-                    // TODO: Map additional properties
                 }})
                 .PaginatedListAsync(request.RequestDto, cancellationToken);";
         }
@@ -376,10 +364,8 @@ public sealed class Get{singularName}ByIdQuery(Guid {char.ToLower(singularName[0
         if (config.CodeGeneration.GenerateMappingProfiles)
         {
             queryContent += $@"
-            var config = new TypeAdapterConfig();
-            config.Apply(new {singularName}MappingProfile());
 
-            return await dbContext.{pluralName}.AsNoTracking().ProjectToType<{singularName}ForReadDto>(config).SingleOrDefaultAsync(c => c.Id == request.{singularName}Id, cancellationToken)
+            return await dbContext.{pluralName}.AsNoTracking().ProjectToType<{singularName}ForReadDto>(TypeAdapterConfig.GlobalSettings).SingleOrDefaultAsync(c => c.Id == request.{singularName}Id, cancellationToken)
                    ?? throw new NotFoundException(nameof({singularName}), request.{singularName}Id);";
         }
         else
@@ -392,7 +378,6 @@ public sealed class Get{singularName}ByIdQuery(Guid {char.ToLower(singularName[0
                 {{
                     Id = x.Id,
                     Name = x.Name
-                    // TODO: Map additional properties
                 }})
                 .SingleOrDefaultAsync(cancellationToken)
                 ?? throw new NotFoundException(nameof({singularName}), request.{singularName}Id);";
@@ -610,20 +595,6 @@ public sealed class {singularName}ForCreateUpdateDtoValidator : AppBaseAbstractV
             .WithMessage(""Name must contain only alphabetic characters."")
             .MaximumLength(64)
             .WithMessage(""Name cannot exceed 64 characters."");
-
-        // Add additional validation rules based on entity properties
-        // Examples from source template:
-        // RuleFor(x => x.Email.Primary)
-        //     .NotEmpty()
-        //     .WithMessage(""Primary Email cannot be empty."")
-        //     .EmailAddress()
-        //     .WithMessage(""Primary Email is not valid."")
-        //     .MaximumLength(64)
-        //     .WithMessage(""Primary Email cannot exceed 64 characters."");
-        //
-        // RuleFor(x => x.PreferredCurrency)
-        //     .IsInEnum()
-        //     .WithMessage(""Preferred Currency is not valid."");
     }}
 }}";
 
@@ -903,18 +874,9 @@ public sealed class {singularName}MappingProfile : IRegister
         config.ForType<{singularName}, {singularName}ForListDto>()
             .Map(dest => dest.Id, src => src.Id)
             .Map(dest => dest.Name, src => src.Name);
-            // Add additional property mappings for complex properties:
-            // .Map(dest => dest.Email, src => src.Email)
-            // .Map(dest => dest.Address, src => src.Address)
-            // .Map(dest => dest.PreferredCurrency, src => src.PreferredCurrency);
 
         config.ForType<{singularName}, {singularName}ForReadDto>()
-            .Map(dest => dest.Id, src => src.Id)
-            .Map(dest => dest.Name, src => src.Name);
-            // Add additional property mappings for complex properties:
-            // .Map(dest => dest.Email, src => src.Email)
-            // .Map(dest => dest.Address, src => src.Address)
-            // .Map(dest => dest.PreferredCurrency, src => src.PreferredCurrency);
+            .InheritsFrom<{singularName}ForListDto>();
     }}
 }}";
 

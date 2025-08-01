@@ -30,9 +30,11 @@ Creating a single CRUD entity traditionally requires:
 git clone https://github.com/QuillySoft/QCli.git
 cd QCli
 
-# Build and install as global tool
-dotnet pack src/Apps/Tools.Cli/Tools.Cli.csproj
-dotnet tool install --global --add-source ./src/Apps/Tools.Cli/bin/Debug QuillySOFT.CLI
+# Build the project in Release configuration
+dotnet build --configuration Release src/Apps/Tools.Cli/Tools.Cli.csproj
+
+# Install the tool from the Release output
+dotnet tool install --global --add-source ./src/Apps/Tools.Cli/bin/Release QuillySOFT.CLI
 
 # Generate your first CRUD entity
 qcli add Product --all
@@ -207,4 +209,3 @@ MIT License - Copyright (c) 2025 QuillySOFT
 **Stop writing boilerplate. Start building features.** 🚀
 
 **📚 [View Complete Documentation →](src/docs/README.md)**
-
